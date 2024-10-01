@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{asset::AssetMetaCheck, prelude::*};
             // {app::{App, First, Startup, Update}, asset::{AssetServer, Assets}, color::Color, math::{Mat4, Quat, Vec3}, pbr::*, 
             // prelude::{default, Camera, Camera3dBundle, Commands, Component, EventReader, IntoSystemConfigs, Mesh, Meshable, Query, Res, ResMut, Resource, Sphere, Transform}, 
             // window::FileDragAndDrop, DefaultPlugins
@@ -8,7 +8,10 @@ use bevy_web_file_drop::WebFileDropPlugin;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(AssetPlugin {
+            meta_check: AssetMetaCheck::Never,
+            ..default()
+        }))
         .add_plugins((C3dPlugin, WebFileDropPlugin))
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
@@ -16,7 +19,6 @@ fn main() {
         .add_systems(Update, (markers).run_if(|state: Res<State>| -> bool { state.file_loaded }))
         .init_resource::<State>()
         .run();
-
 }
 
 #[derive(Resource, Default, Debug)]
