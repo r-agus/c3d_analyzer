@@ -1,5 +1,6 @@
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_web_file_drop::WebFileDropPlugin;
 
 fn main() {
@@ -11,7 +12,7 @@ fn main() {
                 ..default()
             })
         ))
-        .add_plugins(C3dPlugin)
+        .add_plugins((C3dPlugin, PanOrbitCameraPlugin))
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
         .add_systems(Update, (file_drop, load_c3d, keyboard_controls))
@@ -94,15 +95,18 @@ fn setup(
 
     let translation = Vec3::new(0., -3.5, 1.0);
         
-    commands.spawn((Camera3dBundle {
-        camera: Camera {
-            clear_color: Color::srgb(0.8, 0.8, 0.8).into(),
+    commands.spawn((
+        Camera3dBundle {
+            camera: Camera {
+                clear_color: Color::srgb(0.8, 0.8, 0.8).into(),
+                ..Default::default()
+            },
+            transform: Transform::from_translation(translation)
+                .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
             ..Default::default()
         },
-        transform: Transform::from_translation(translation)
-            .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
-        ..Default::default()
-    },));
+        PanOrbitCamera::default(),
+    ));
 }
 
 fn update_c3d_path(
