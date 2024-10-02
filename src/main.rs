@@ -1,3 +1,5 @@
+use std::ops::Sub;
+
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
@@ -11,7 +13,7 @@ fn main() {
         .add_plugins((C3dPlugin, WebFileDropPlugin))
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
-        .add_systems(Update, (file_drop, load_c3d, play_pause))
+        .add_systems(Update, (file_drop, load_c3d, keyboard_controls))
         .add_systems(Update, (markers).run_if(|state: Res<State>| -> bool { state.file_loaded && state.play }))
         .init_resource::<State>()
         .run();
@@ -29,12 +31,23 @@ struct State {
 #[derive(Component)]
 struct Marker;
 
-fn play_pause (
+fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<State>,
+    query: Query<(&mut Transform, &Marker)>, // to call markers
+    c3d_state: ResMut<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
 ){
     if keyboard.just_pressed(KeyCode::Space) {
         state.play = !state.play;
+    }
+
+    if keyboard.just_pressed(KeyCode::ArrowLeft){
+        state.frame = state.frame.saturating_sub(2);  // markers() adds 1 to state.frame  
+        markers(state, query, c3d_state, c3d_assets); // render the markers
+    } else if keyboard.just_pressed(KeyCode::ArrowRight) {
+        state.frame = state.frame.saturating_add(0);
+        markers(state, query, c3d_state, c3d_assets); // render the markers
     }
 }
 
