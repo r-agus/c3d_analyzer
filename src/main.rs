@@ -1,16 +1,17 @@
-use std::ops::Sub;
-
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(AssetPlugin {
-            meta_check: AssetMetaCheck::Never,
-            ..default()
-        }))
-        .add_plugins((C3dPlugin, WebFileDropPlugin))
+        .add_plugins((
+            WebFileDropPlugin,                          // Has to load before AssetPlugin (that is loaded by DefaultPlugins)
+            DefaultPlugins.set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                ..default()
+            })
+        ))
+        .add_plugins(C3dPlugin)
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
         .add_systems(Update, (file_drop, load_c3d, keyboard_controls))
@@ -43,11 +44,11 @@ fn keyboard_controls (
     }
 
     if keyboard.just_pressed(KeyCode::ArrowLeft){
-        state.frame = state.frame.saturating_sub(2);  // markers() adds 1 to state.frame  
-        markers(state, query, c3d_state, c3d_assets); // render the markers
+        state.frame = state.frame.saturating_sub(2);            // markers() adds 1 to state.frame  
+        markers(state, query, c3d_state, c3d_assets);           // render the markers
     } else if keyboard.just_pressed(KeyCode::ArrowRight) {
         state.frame = state.frame.saturating_add(0);
-        markers(state, query, c3d_state, c3d_assets); // render the markers
+        markers(state, query, c3d_state, c3d_assets);           // render the markers
     }
 }
 
@@ -74,8 +75,8 @@ fn setup(
     // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Default state
-    state.frame  = 0;
-    state.path   =  "".to_string();
+    state.frame = 0;
+    state.path =  "".to_string();
     state.reload = false;
     state.file_loaded = false;
     state.play = true;
