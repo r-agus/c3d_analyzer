@@ -15,8 +15,8 @@ fn main() {
         .add_plugins((C3dPlugin, WebFileDropPlugin))
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
-        .add_systems(Update, (file_drop, load_c3d))
-        .add_systems(Update, (markers).run_if(|state: Res<State>| -> bool { state.file_loaded }))
+        .add_systems(Update, (file_drop, load_c3d, play_pause))
+        .add_systems(Update, (markers).run_if(|state: Res<State>| -> bool { state.file_loaded && state.play }))
         .init_resource::<State>()
         .run();
 }
@@ -27,11 +27,20 @@ struct State {
     pub path: String,
     pub reload: bool,
     pub file_loaded: bool,
+    pub play: bool,
 }
 
 #[derive(Component)]
 struct Marker;
 
+fn play_pause (
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut state: ResMut<State>,
+){
+    if keyboard.just_pressed(KeyCode::Space) {
+        state.play = !state.play;
+    }
+}
 
 fn file_drop(
     mut evr_dnd: EventReader<FileDragAndDrop>,
@@ -60,6 +69,7 @@ fn setup(
     state.path   =  "".to_string();
     state.reload = false;
     state.file_loaded = false;
+    state.play = true;
 
     // Spawn a light and the camera
     commands.spawn(PointLightBundle {
