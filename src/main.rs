@@ -99,11 +99,11 @@ fn setup(
         Camera3dBundle {
             camera: Camera {
                 clear_color: Color::srgb(0.8, 0.8, 0.8).into(),
-                ..Default::default()
+                ..default()
             },
             transform: Transform::from_translation(translation)
                 .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
-            ..Default::default()
+            ..default()
         },
         PanOrbitCamera::default(),
     ));
