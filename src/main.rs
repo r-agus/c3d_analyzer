@@ -1,8 +1,4 @@
 use bevy::{asset::AssetMetaCheck, prelude::*};
-            // {app::{App, First, Startup, Update}, asset::{AssetServer, Assets}, color::Color, math::{Mat4, Quat, Vec3}, pbr::*, 
-            // prelude::{default, Camera, Camera3dBundle, Commands, Component, EventReader, IntoSystemConfigs, Mesh, Meshable, Query, Res, ResMut, Resource, Sphere, Transform}, 
-            // window::FileDragAndDrop, DefaultPlugins
-            // };
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
 
