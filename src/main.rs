@@ -43,6 +43,7 @@ fn file_drop(
             state.path = path_buf.to_str().unwrap().to_string();
             state.reload = true;
             state.file_loaded = true;
+            state.frame = 0;
         }
     }
 }
