@@ -19,11 +19,11 @@ En el momento de redacción de estas líneas (3/10/2024), WASM no tiene acceso a
 ### Bevy
 
 Pese a no ser estrictamente necesario, se opta por elegir un motor gráfico para el proyecto, para eliminar la necesidad de lidiar con la gpu. Se elige Bevy principalmente por dos motivos:
-    * Está escrito plenamente en Rust:Se puede compilar de forma nativa a Web Assembly
-    * Es completamente modular: Permite crear webs relativamente ligeras
+* **Está escrito plenamente en Rust:** Se puede compilar de forma nativa a Web Assembly.
+* **Es completamente modular:** Permite crear webs relativamente ligeras.
 
 Además, este motor gráfico está muy optimizado, posiblemente consiga tasas de frames muy similares a las que se conseguirían sin utilizar un motor gráfico. 
 
 Bevy utiliza el patrón de diseño _ECS_, que es muy simple, pero diferente a la orientación a objetos, conviene familiarizarse. 
 
-Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones estables cambian constantemente, pero ofrecen guías para actualizar. Además, la comunidad es muy amplia y los pluggins y assets son numerosos. 
+Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones estables cambian constantemente, pero ofrecen guías para actualizar. Además, la comunidad es muy amplia y los plugins y assets son numerosos. 
