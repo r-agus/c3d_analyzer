@@ -2,6 +2,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_web_file_drop::WebFileDropPlugin;
+use gui_plugin::GUIPlugin;
 
 fn main() {
     App::new()
@@ -13,6 +14,7 @@ fn main() {
             })
         ))
         .add_plugins((C3dPlugin, PanOrbitCameraPlugin))
+        .add_plugins(GUIPlugin)
         .add_systems(Startup, setup)
         .add_systems(First, update_c3d_path.run_if(|state: Res<State>| -> bool { state.reload } ))
         .add_systems(Update, (file_drop, load_c3d, keyboard_controls))
@@ -77,7 +79,7 @@ fn setup(
 ) {
     // Default state
     state.frame = 0;
-    state.path =  "".to_string();
+    state.path =  "walk.c3d".to_string();
     state.reload = false;
     state.file_loaded = false;
     state.play = true;

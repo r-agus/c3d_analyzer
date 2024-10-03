@@ -2202,6 +2202,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be136d9dacc2a13cc70bb6c8f902b414fb2641f8db1314637c6b7933411a8f82"
 
 [[package]]
+name = "gui_plugin"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_app",
+ "bevy_egui",
+]
+
+[[package]]
 name = "guillotiere"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3230,9 +3239,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_c3d_mod",
- "bevy_egui",
  "bevy_panorbit_camera",
  "bevy_web_file_drop",
+ "gui_plugin",
 ]
 
 [[package]]
