@@ -1,0 +1,10 @@
+[package]
+name = "input_plugin"
+version = "0.1.0"
+description = "Plugin to manage inputs, as files or the keyboard"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.2"
+bevy_c3d_mod = {path = "../bevy_c3d_mod"}
+bevy_web_file_drop = { path = "../web_bevy_blob_loader" }

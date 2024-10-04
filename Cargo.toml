@@ -5,9 +5,8 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.14.2"
-bevy_c3d_mod = {path = "plugins/bevy_c3d_mod"}
 bevy_panorbit_camera = "0.19.3"
-bevy_web_file_drop = { path = "plugins/web_bevy_blob_loader" }
+input_plugin = { path = "plugins/input" }
 gui_plugin = { path = "plugins/gui" }
 
 # Enable a small amount of optimization in the dev profile.

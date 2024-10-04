@@ -1,7 +1,7 @@
 use bevy::{input::common_conditions::input_toggle_active, prelude::*, window::PrimaryWindow};
 
 use bevy_egui::{egui, EguiContext, EguiPlugin};
-use bevy_inspector_egui::{bevy_inspector::hierarchy::SelectedEntities, quick::WorldInspectorPlugin, DefaultInspectorConfigPlugin};
+use bevy_inspector_egui::{bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin};
 
 pub struct GUIPlugin;
 
