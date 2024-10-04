@@ -21,7 +21,7 @@ impl Plugin for ControlPlugin {
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
             .add_systems(Update, (file_drop::file_drop, keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
-            .add_systems(Update, (markers).run_if(|state: Res<AppState>| -> bool { state.file_loaded && state.play }))
+            .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { state.file_loaded && state.play }))
             .init_resource::<AppState>();
     }
 }
@@ -39,7 +39,7 @@ pub struct AppState {
 struct Marker;
 
 #[derive(Component)]
-struct _Points;
+struct Points;
 
 fn setup(
     mut state: ResMut<AppState>,
@@ -61,7 +61,12 @@ fn load_c3d(
 ) {
     if let Some(_) = events.read().last() {
         let asset = c3d_assets.get(&c3d_state.handle);
-        // let points = commands.spawn(Points).id();
+        let points = commands.spawn(
+            (TransformBundle {
+                ..default()
+            },
+            Points
+        )).id();
         match asset {
             Some(asset) => {
                 for _ in 0..asset.c3d.points.labels.len() {
@@ -83,7 +88,7 @@ fn load_c3d(
                             ..default()
                         },
                         Marker,
-                    ));
+                    )).set_parent(points);
                 }
             }
             None => {}
@@ -91,9 +96,10 @@ fn load_c3d(
     }
 }
 
-fn markers(
+fn represent_points(
     mut state: ResMut<AppState>,
-    mut query: Query<(&mut Transform, &Marker)>,
+    query_points: Query<(&Points, &Children)>,          // Points and their children (Markers)
+    mut query_markers: Query<(&mut Transform, &Marker)>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ) {
@@ -104,19 +110,26 @@ fn markers(
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
             let mut i = 0;
-            // for(_, mut marker) in query.iter_mut() 
-            // let markers = query.get_single_mut();
-            for (mut transform, _) in query.iter_mut() {
-                transform.translation = Vec3::new(
-                    point_data[(state.frame, i)][0] as f32 / 1000.0,
-                    point_data[(state.frame, i)][1] as f32 / 1000.0,
-                    point_data[(state.frame, i)][2] as f32 / 1000.0,
-                );
-                i += 1;
-            }
-            state.frame += 1;
-            if state.frame >= num_frames {
-                state.frame = 0;
+    
+            for (_points, children) in query_points.iter() {
+                for &child in children.iter() {
+                    let pos = query_markers.get_mut(child);
+                    match pos {
+                        Ok((mut transform, _)) => {
+                            transform.translation = Vec3::new(
+                                point_data[(state.frame, i)][0] as f32 / 1000.0,
+                                point_data[(state.frame, i)][1] as f32 / 1000.0,
+                                point_data[(state.frame, i)][2] as f32 / 1000.0,
+                            );
+                            i += 1;
+                        }
+                        Err(_) => {}
+                    }
+                }    
+                state.frame += 1;
+                if state.frame >= num_frames {
+                    state.frame = 0;
+                }        
             }
         }
         None => {}
