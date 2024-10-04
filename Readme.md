@@ -27,3 +27,18 @@ Además, este motor gráfico está muy optimizado, posiblemente consiga tasas de
 Bevy utiliza el patrón de diseño _ECS_, que es muy simple, pero diferente a la orientación a objetos, conviene familiarizarse. 
 
 Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones estables cambian constantemente, pero ofrecen guías para actualizar. Además, la comunidad es muy amplia y los plugins y assets son numerosos. 
+
+
+# Objetivos del proyecto
+
+- [x] Leer ficheros C3D
+- [ ] Leer ficheros de configuración
+- [ ] Editar ficheros C3D
+- [ ] Editar ficheros de configuración
+- [x] Representar el fichero C3D
+- [x] Añadir controles de tiempo sobre un C3D (_play/pause_ y control del _frame_ )
+- [ ] Añadir un eje de tiempo
+- [x] Añadir una escena 3D y una cámara
+- [ ] Posibilidad de cambiar la escena en _runtime_
+- [ ] Calcular y representar datos biomecánicos
+

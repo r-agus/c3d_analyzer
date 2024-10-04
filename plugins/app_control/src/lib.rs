@@ -1,8 +1,9 @@
 mod file_drop;
-mod keyboard;
+mod mouse_keyboard;
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
+use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
 
 pub struct ControlPlugin;
@@ -16,10 +17,10 @@ impl Plugin for ControlPlugin {
                             ..default()
                         }
                 )))
-            .add_plugins(C3dPlugin)
+            .add_plugins((C3dPlugin, DefaultPickingPlugins))
             .add_systems(Startup, setup)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
-            .add_systems(Update, (file_drop::file_drop, keyboard::keyboard_controls))
+            .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
             .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { state.file_loaded && state.play }))
             .init_resource::<AppState>();
