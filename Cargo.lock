@@ -2206,7 +2206,6 @@ name = "gui_plugin"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_app",
  "bevy_egui",
 ]
 
