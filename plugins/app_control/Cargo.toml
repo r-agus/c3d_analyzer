@@ -1,7 +1,7 @@
 [package]
-name = "input_plugin"
+name = "control_plugin"
 version = "0.1.0"
-description = "Plugin to manage inputs, as files or the keyboard"
+description = "This plugin manages inputs, as files or the keyboard, and represents the corresponding points"
 edition = "2021"
 
 [dependencies]

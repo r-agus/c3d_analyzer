@@ -5,9 +5,9 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
 
-pub struct InputPlugin;
+pub struct ControlPlugin;
 
-impl Plugin for InputPlugin {
+impl Plugin for ControlPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins((WebFileDropPlugin, DefaultPlugins.set(

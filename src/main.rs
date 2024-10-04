@@ -1,13 +1,11 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use gui_plugin::GUIPlugin;
-use input_plugin::InputPlugin;
+use control_plugin::ControlPlugin;
 
 fn main() {
     App::new()
-        .add_plugins(
-            InputPlugin                          // Has to load before AssetPlugin (that is loaded by DefaultPlugins)
-        )
+        .add_plugins(ControlPlugin)
         .add_plugins(PanOrbitCameraPlugin)
         .add_plugins(GUIPlugin)
         .add_systems(Startup, setup)

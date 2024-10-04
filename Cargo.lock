@@ -1597,6 +1597,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "control_plugin"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_c3d_mod",
+ "bevy_web_file_drop",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2415,15 +2424,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e05c02b5e89bff3b946cedeca278abc628fe811e604f027c45a8aa3cf793d0eb"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "input_plugin"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_c3d_mod",
- "bevy_web_file_drop",
 ]
 
 [[package]]
@@ -3326,8 +3326,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_panorbit_camera",
+ "control_plugin",
  "gui_plugin",
- "input_plugin",
 ]
 
 [[package]]
