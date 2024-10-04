@@ -12,10 +12,10 @@ impl Plugin for ControlPlugin {
         app
             .add_plugins((WebFileDropPlugin, DefaultPlugins.set(
                 AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
-                    ..default()
-            }
-        )))
+                            meta_check: AssetMetaCheck::Never,
+                            ..default()
+                        }
+                )))
             .add_plugins(C3dPlugin)
             .add_systems(Startup, setup)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
@@ -36,10 +36,11 @@ pub struct AppState {
 }
 
 #[derive(Component)]
-struct Marker;
+struct Marker;      // This is the marker that represents the points in the C3D file
 
 #[derive(Component)]
-struct Points;
+struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
+    
 
 fn setup(
     mut state: ResMut<AppState>,
@@ -61,12 +62,16 @@ fn load_c3d(
 ) {
     if let Some(_) = events.read().last() {
         let asset = c3d_assets.get(&c3d_state.handle);
-        let points = commands.spawn(
-            (TransformBundle {
-                ..default()
-            },
-            Points
-        )).id();
+        let points = 
+            commands
+                .spawn((
+                    PbrBundle {
+                        ..default()
+                    },
+                    C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.
+                ))
+                .id();
+        
         match asset {
             Some(asset) => {
                 for _ in 0..asset.c3d.points.labels.len() {
@@ -98,7 +103,7 @@ fn load_c3d(
 
 fn represent_points(
     mut state: ResMut<AppState>,
-    query_points: Query<(&Points, &Children)>,          // Points and their children (Markers)
+    query_points: Query<(&C3dMarkers, &Children)>,          // C3dMarkers and their children (Markers)
     mut query_markers: Query<(&mut Transform, &Marker)>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
