@@ -7,3 +7,5 @@ edition = "2021"
 [dependencies]
 bevy = "0.14.2"
 bevy_egui = "0.29"
+bevy_c3d_mod = {path = "../bevy_c3d_mod"}
+bevy-inspector-egui = "0.26.0"
