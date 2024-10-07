@@ -14,10 +14,11 @@ impl Plugin for GUIPlugin {
             .add_plugins(DefaultInspectorConfigPlugin)
             .add_systems(
                 Update,
-                inspector_ui.run_if(input_toggle_active(true, KeyCode::Escape)),
-            )
-            .add_systems(Update, timeline);
-
+        (
+                    inspector_ui.run_if(input_toggle_active(true, KeyCode::Escape)), 
+                    timeline.run_if(input_toggle_active(true, KeyCode::KeyT)),
+                ).chain(),  // We cannot acces in paralel to the egui context
+            );
     }
 }
 
