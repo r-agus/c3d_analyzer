@@ -5,7 +5,7 @@ pub fn keyboard_controls (
     mut state: ResMut<AppState>,
     query_points: Query<(&C3dMarkers, &Children)>,          // Points and their children (Markers)
     query_markers: Query<(&mut Transform, &Marker)>,
-    c3d_state: ResMut<C3dState>,
+    c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ){
     if keyboard.just_pressed(KeyCode::Space) {

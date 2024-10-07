@@ -17,8 +17,8 @@ pub fn file_drop(
 
 pub fn update_c3d_path(
     mut state: ResMut<AppState>,
-    mut c3d_state: ResMut<C3dState>,
     asset_server: Res<AssetServer>,
+    mut c3d_state: ResMut<C3dState>,
 ) {
     if state.reload {
         c3d_state.handle = asset_server.load(state.path.clone());
