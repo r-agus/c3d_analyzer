@@ -9,3 +9,4 @@ bevy = "0.14.2"
 bevy_egui = "0.29"
 bevy_c3d_mod = {path = "../bevy_c3d_mod"}
 bevy-inspector-egui = "0.26.0"
+control_plugin = { path = "../app_control" }

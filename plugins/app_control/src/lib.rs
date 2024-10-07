@@ -30,6 +30,7 @@ impl Plugin for ControlPlugin {
 #[derive(Resource, Default, Debug)]
 pub struct AppState {
     pub frame: usize,
+    pub num_frames: usize,
     pub path: String,
     pub reload: bool,
     pub file_loaded: bool,
@@ -37,10 +38,10 @@ pub struct AppState {
 }
 
 #[derive(Component)]
-struct Marker;      // This is the marker that represents the points in the C3D file
+pub struct Marker;      // This is the marker that represents the points in the C3D file
 
 #[derive(Component)]
-struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
+pub struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
     
 
 fn setup(
@@ -102,11 +103,11 @@ fn load_c3d(
     }
 }
 
-fn represent_points(
+pub fn represent_points(
     mut state: ResMut<AppState>,
     query_points: Query<(&C3dMarkers, &Children)>,          // C3dMarkers and their children (Markers)
     mut query_markers: Query<(&mut Transform, &Marker)>,
-    c3d_state: ResMut<C3dState>,
+    c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ) {
     let asset = c3d_assets.get(&c3d_state.handle);
@@ -116,7 +117,9 @@ fn represent_points(
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
             let mut i = 0;
-    
+            
+            state.num_frames = num_frames;
+
             for (_points, children) in query_points.iter() {
                 for &child in children.iter() {
                     let pos = query_markers.get_mut(child);

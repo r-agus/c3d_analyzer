@@ -2475,6 +2475,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_c3d_mod",
  "bevy_egui",
+ "control_plugin",
 ]
 
 [[package]]
