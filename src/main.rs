@@ -28,7 +28,7 @@ fn setup(
         ..default()
     });
 
-    let translation = Vec3::new(0., -3.5, 1.0);
+    let translation = Vec3::new(0., -5.0, 5.);
         
     commands.spawn((
         Camera3dBundle {
@@ -36,11 +36,15 @@ fn setup(
                 clear_color: Color::srgb(0.8, 0.8, 0.8).into(),
                 ..default()
             },
-            transform: Transform::from_translation(translation)
-                .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
+            transform: Transform::from_translation(translation),
+                // .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
             ..default()
         },
         PanOrbitCamera{
+            button_orbit: MouseButton::Left,
+            button_pan: MouseButton::Right,
+            touch_enabled: true,
+            reversed_zoom: false,
             ..default()
         }, 
     ));
