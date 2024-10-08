@@ -55,12 +55,16 @@ pub struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
 
 fn setup(
     mut state: ResMut<AppState>,
+    mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
     state.path =  "walk.c3d".to_string();
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
+
+    gui.hierarchy_inspector = false;
+    gui.timeline = true;
 }
 
 fn load_c3d(
