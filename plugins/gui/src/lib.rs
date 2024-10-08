@@ -74,7 +74,12 @@ fn gui(world: &mut World,
 
     let mut app_state = world.get_resource_mut::<AppState>().unwrap();
     let mut frame  = app_state.frame;
-    let num_frames = app_state.num_frames;
+    
+    let num_frames = match app_state.num_frames {
+        0 => 1,
+        _ => app_state.num_frames,
+    };
+
     // Timeline
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.get_mut(), |ui| {
