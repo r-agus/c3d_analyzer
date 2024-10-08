@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use bevy_egui::{egui::{self, Layout}, EguiContext, EguiPlugin};
+use bevy_egui::{egui::{self}, EguiContext, EguiPlugin};
 use bevy_inspector_egui::{bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin};
 
 use control_plugin::*;
@@ -33,6 +33,7 @@ fn gui(world: &mut World,
 
     if hierarchy_enabled{
     // Inspector
+    // ui.collapsing(heading, add_contents): interesting for the points
         egui::SidePanel::left("hierarchy")
             .default_width(200.0)
             .show(egui_context.get_mut(), |ui| {
@@ -74,7 +75,7 @@ fn gui(world: &mut World,
 
     let mut app_state = world.get_resource_mut::<AppState>().unwrap();
     let mut frame  = app_state.frame;
-    
+    let mut path = app_state.path.clone();
     let num_frames = match app_state.num_frames {
         0 => 1,
         _ => app_state.num_frames,
@@ -86,30 +87,30 @@ fn gui(world: &mut World,
 
             let slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
-            
-            ui.spacing_mut().slider_width = half_width;
-            ui.spacing_mut().text_edit_width = half_width;
 
-            // ui.allocate_ui_with_layout(ui.available_size(), Layout::, add_contents)
+            ui.spacing_mut().slider_width = half_width;
+            ui.spacing_mut().text_edit_width = half_width * 0.35;
+            ui.spacing_mut().tooltip_width = half_width * 0.5;
+
             ui.vertical_centered(|ui| {
                 ui.horizontal(|ui| {
+                    // ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {  // This might be an egui bug
+                    let path_label = ui.label("Path: ");
+                    ui.text_edit_singleline(&mut path)
+                        .labelled_by(path_label.id)
+                        .on_hover_text(path);
+                        
                     ui.label("Frame:");
-                    ui.add( slider);
-                });
-        
-                ui.horizontal(|ui| {
-                    ui.label("Path:");
-                    ui.text_edit_singleline(&mut app_state.path);
-                });
-        
-                ui.horizontal(|ui| {
+                    ui.add(slider
+                        .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
+                    );
                     ui.label("Play:");
                     ui.checkbox(&mut app_state.play, "");
+                    // });
                 });
             });
-            
         });
-        
+
         if app_state.frame != frame {
             app_state.frame = frame;
             app_state.render_frame = true;
