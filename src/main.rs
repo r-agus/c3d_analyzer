@@ -33,7 +33,7 @@ fn setup(
     commands.spawn((
         Camera3dBundle {
             camera: Camera {
-                clear_color: Color::srgb(0.8, 0.8, 0.8).into(),
+                clear_color: Color::srgb(0.8, 0.8, 0.8).into(),  // 0.22, 0.22, 0.22 is cool (but change points to green)
                 ..default()
             },
             transform: Transform::from_translation(translation),
