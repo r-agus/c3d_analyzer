@@ -22,20 +22,29 @@ impl Plugin for ControlPlugin {
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
-            .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { state.file_loaded && state.play }))
-            .init_resource::<AppState>();
+            .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame }))
+            .init_resource::<AppState>()
+            .init_resource::<GuiSidesEnabled>();
     }
 }
 
 #[derive(Resource, Default, Debug)]
 pub struct AppState {
-    pub frame: usize,
-    pub num_frames: usize,
+    pub frame: usize,       // Current frame
+    pub num_frames: usize,  // Number of frames in the c3d file
     pub path: String,
     pub reload: bool,
     pub file_loaded: bool,
-    pub play: bool,
+    pub play: bool,         // Play the animation
+    pub render_frame: bool, // Send a order to render the frame. Ignores the play state. Must set manually to true every frame.
 }
+
+#[derive(Resource, Default, Debug)]
+pub struct GuiSidesEnabled {
+    pub hierarchy_inspector: bool,
+    pub timeline: bool,
+}
+
 
 #[derive(Component)]
 pub struct Marker;      // This is the marker that represents the points in the C3D file
@@ -110,6 +119,10 @@ pub fn represent_points(
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ) {
+    if state.render_frame {
+        state.render_frame = false;
+    }
+
     let asset = c3d_assets.get(&c3d_state.handle);
 
     match asset {

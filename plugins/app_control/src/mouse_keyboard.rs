@@ -3,6 +3,7 @@ use crate::*;
 pub fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<AppState>,
+    mut gui_state: ResMut<GuiSidesEnabled>,
     query_points: Query<(&C3dMarkers, &Children)>,          // Points and their children (Markers)
     query_markers: Query<(&mut Transform, &Marker)>,
     c3d_state: Res<C3dState>,
@@ -18,5 +19,9 @@ pub fn keyboard_controls (
     } else if keyboard.just_pressed(KeyCode::ArrowRight) {
         state.frame = state.frame.saturating_add(0);
         represent_points(state, query_points, query_markers, c3d_state, c3d_assets);           // render the markers
+    } else if keyboard.just_pressed(KeyCode::Escape) {
+        gui_state.hierarchy_inspector = !gui_state.hierarchy_inspector;
+    } else if keyboard.just_pressed(KeyCode::KeyT) {
+        gui_state.timeline = !gui_state.timeline;        
     }
 }
