@@ -3,20 +3,28 @@ use crate::*;
 pub fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<AppState>,
-    query_points: Query<(&C3dMarkers, &Children)>,          // Points and their children (Markers)
-    query_markers: Query<(&mut Transform, &Marker)>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
+    mut gui_state: ResMut<GuiSidesEnabled>,
 ){
-    if keyboard.just_pressed(KeyCode::Space) {
-        state.play = !state.play;
-    }
-
-    if keyboard.just_pressed(KeyCode::ArrowLeft){
-        state.frame = state.frame.saturating_sub(2);            // markers() adds 1 to state.frame  
-        represent_points(state, query_points, query_markers, c3d_state, c3d_assets);           // render the markers
-    } else if keyboard.just_pressed(KeyCode::ArrowRight) {
-        state.frame = state.frame.saturating_add(0);
-        represent_points(state, query_points, query_markers, c3d_state, c3d_assets);           // render the markers
-    }
+    if let Some(key) = keyboard.get_just_pressed().next() {
+        match key {
+            KeyCode::Space => {
+                state.play = !state.play;
+            }
+            KeyCode::ArrowLeft => {
+                state.frame = state.frame.saturating_sub(2);  // represent_points increments frame by 1
+                state.render_frame = true;
+            }
+            KeyCode::ArrowRight => {
+                state.frame = state.frame.saturating_add(0);
+                state.render_frame = true;
+            }
+            KeyCode::Escape => {
+                gui_state.hierarchy_inspector = !gui_state.hierarchy_inspector;
+            }
+            KeyCode::KeyT => {
+                gui_state.timeline = !gui_state.timeline;
+            }
+            _ => {}
+        }
+    }    
 }
