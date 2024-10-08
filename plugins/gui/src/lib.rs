@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use bevy_egui::{egui::{self}, EguiContext, EguiPlugin};
+use bevy_egui::{egui::{self, Layout}, EguiContext, EguiPlugin};
 use bevy_inspector_egui::{bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin};
 
 use control_plugin::*;
@@ -83,22 +83,31 @@ fn gui(world: &mut World,
     // Timeline
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.get_mut(), |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Frame:");
-                        ui.add_sized(ui.available_size() * 0.5, egui::Slider::new(&mut frame, 0..=(num_frames - 1)));
-                    });
 
-                    ui.horizontal(|ui| {
-                        ui.label("Path:");
-                        ui.text_edit_singleline(&mut app_state.path);
-                    });
+            let slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
+            let half_width = ui.available_width() * 0.5; 
+            
+            ui.spacing_mut().slider_width = half_width;
+            ui.spacing_mut().text_edit_width = half_width;
 
-                    ui.horizontal(|ui| {
-                        ui.label("Play:");
-                        ui.checkbox(&mut app_state.play, "");
-                    });
+            // ui.allocate_ui_with_layout(ui.available_size(), Layout::, add_contents)
+            ui.vertical_centered(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Frame:");
+                    ui.add( slider);
                 });
+        
+                ui.horizontal(|ui| {
+                    ui.label("Path:");
+                    ui.text_edit_singleline(&mut app_state.path);
+                });
+        
+                ui.horizontal(|ui| {
+                    ui.label("Play:");
+                    ui.checkbox(&mut app_state.play, "");
+                });
+            });
+            
         });
         
         if app_state.frame != frame {
