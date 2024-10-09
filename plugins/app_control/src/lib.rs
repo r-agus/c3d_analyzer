@@ -30,13 +30,39 @@ impl Plugin for ControlPlugin {
 
 #[derive(Resource, Default, Debug)]
 pub struct AppState {
-    pub frame: usize,       // Current frame
-    pub num_frames: usize,  // Number of frames in the c3d file
+    /// Current frame
+    pub frame: usize,
+    /// Number of frames in the c3d file
+    pub num_frames: usize,
+    /// Path to the c3d file
     pub path: String,
+    /// Reload the c3d file. Used to reload the c3d file when the path changes.
     pub reload: bool,
+    /// File loaded. Used to know if the c3d file is loaded.
     pub file_loaded: bool,
-    pub play: bool,         // Play the animation
-    pub render_frame: bool, // Send a order to render the frame. Ignores the play state. Must set manually to true every frame.
+    /// Play the animation
+    pub play: bool,
+    /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
+    pub render_frame: bool,
+    /// Frame rate of the animation. None means maximun of your hardware. Fixed is to match the c3d file frame rate, or any other frame rate.
+    pub render_at_fixed_frame_rate: Option<u32>,
+}
+
+/// AppState contains the relevant information for the app to run.
+/// It is a resource that can be accessed by the systems.
+impl AppState {
+    pub fn default() -> Self {
+        AppState {
+            frame: 0,
+            num_frames: 0,
+            path: "".to_string(),
+            reload: false,
+            file_loaded: false,
+            play: false,
+            render_frame: false,
+            render_at_fixed_frame_rate: None,
+        }
+    }
 }
 
 #[derive(Resource, Default, Debug)]
@@ -62,6 +88,7 @@ fn setup(
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
+    state.render_at_fixed_frame_rate = None;
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
