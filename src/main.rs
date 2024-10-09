@@ -7,7 +7,7 @@ fn main() {
     App::new()
         .add_plugins(ControlPlugin)
         .add_plugins(PanOrbitCameraPlugin)
-        .add_plugins(GUIPlugin)
+        .add_plugins(GUIPlugin)     // TODO: move this to the control_plugin
         .add_systems(Startup, setup)
         .run();
 }

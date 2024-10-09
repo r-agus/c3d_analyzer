@@ -29,6 +29,7 @@ impl Plugin for ControlPlugin {
 }
 
 #[derive(Resource, Default, Debug)]
+/// AppState contains the relevant information of the c3d file to be loaded and rendered, and the way of representing it.
 pub struct AppState {
     /// Current frame
     pub frame: usize,
@@ -44,12 +45,10 @@ pub struct AppState {
     pub play: bool,
     /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
     pub render_frame: bool,
-    /// Frame rate of the animation. None means maximun of your hardware. Fixed is to match the c3d file frame rate, or any other frame rate.
+    /// Frame rate of the animation. None means maximun of your hardware (typically 60Hz of the screen). Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
     pub render_at_fixed_frame_rate: Option<u32>,
 }
 
-/// AppState contains the relevant information for the app to run.
-/// It is a resource that can be accessed by the systems.
 impl AppState {
     pub fn default() -> Self {
         AppState {
@@ -66,17 +65,22 @@ impl AppState {
 }
 
 #[derive(Resource, Default, Debug)]
+/// GuiSidesEnabled contains the information of the GUI sides that are enabled.
 pub struct GuiSidesEnabled {
+    /// The inspector contains the hierarchy of the entities (world) and the properties of the selected entity.
     pub hierarchy_inspector: bool,
+    /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
     pub timeline: bool,
 }
 
 
 #[derive(Component)]
-pub struct Marker;      // This is the marker that represents the points in the C3D file
+/// This is the marker that represents the points in the C3D file
+pub struct Marker;      
 
 #[derive(Component)]
-pub struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
+/// This is a bunch of markers (parent of Marker)
+pub struct C3dMarkers;  
     
 
 fn setup(
