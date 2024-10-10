@@ -85,29 +85,59 @@ fn gui(world: &mut World,
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.get_mut(), |ui| {
 
-            let slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
+            let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
 
             ui.spacing_mut().slider_width = half_width;
             ui.spacing_mut().text_edit_width = half_width * 0.35;
             ui.spacing_mut().tooltip_width = half_width * 0.5;
 
-            ui.vertical_centered(|ui| {
-                ui.horizontal(|ui| {
-                    // ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {  // This might be an egui bug
-                    let path_label = ui.label("Path: ");
-                    ui.text_edit_singleline(&mut path)
-                        .labelled_by(path_label.id)
-                        .on_hover_text(path);
-                        
-                    ui.label("Frame:");
-                    ui.add(slider
-                        .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
-                    );
-                    ui.label("Play:");
-                    ui.checkbox(&mut app_state.play, "");
-                    // });
+            ui.horizontal(|ui| {
+                // ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {  // This might be an egui bug
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        let path_label = ui.label("Path: ");
+                        ui.text_edit_singleline(&mut path)
+                            .labelled_by(path_label.id)
+                            .on_hover_text(path);
+                    });
                 });
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Frame:");
+                        ui.add(frame_slider
+                            .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
+                        );
+                    });
+                });
+
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Play:");
+                        ui.checkbox(&mut app_state.play, "");
+                    });
+                });
+
+                if let Some(fixed_frame_rate) = app_state.render_at_fixed_frame_rate{
+                    ui.vertical(|ui| {  
+                        ui.horizontal(|ui| {                 
+                            ui.spacing_mut().slider_width = ui.available_width() * 0.7;
+
+                            match app_state.frame_rate {
+                                Some(c3d_frame_rate) => {
+                                    let mut speed = fixed_frame_rate as f64 / c3d_frame_rate as f64;
+                                    let speed_slider;
+                                    speed_slider = egui::Slider::new(&mut speed, 0.0..=2.).fixed_decimals(1);
+                                    ui.add(speed_slider);
+                                    app_state.render_at_fixed_frame_rate = Some((c3d_frame_rate as f64 * speed).round() as u32);
+                                },
+                                None => {},                                
+                            };
+                        });
+                    });
+                }
+
+                // });
             });
         });
 

@@ -45,6 +45,8 @@ pub struct AppState {
     pub play: bool,
     /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
     pub render_frame: bool,
+    /// Frame rate of the c3d. You should not modify this value. To adjust the representation speed use render_at_fixed_frame_rate.
+    pub frame_rate: Option<f32>,
     /// Frame rate of the animation. None means maximun of your hardware (typically 60Hz of the screen). Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
     pub render_at_fixed_frame_rate: Option<u32>,
 }
@@ -59,6 +61,7 @@ impl AppState {
             file_loaded: false,
             play: false,
             render_frame: false,
+            frame_rate: None,
             render_at_fixed_frame_rate: None,
         }
     }
@@ -88,11 +91,11 @@ fn setup(
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    state.path =  "walk.c3d".to_string();
+    // state.path =  "walk.c3d".to_string();
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
-    state.render_at_fixed_frame_rate = None;
+    state.render_at_fixed_frame_rate = Some(500);
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
@@ -105,6 +108,7 @@ fn load_c3d(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
+    mut app_state: ResMut<AppState>,
 ) {
     if let Some(_) = events.read().last() {
         let asset = c3d_assets.get(&c3d_state.handle);
@@ -141,6 +145,7 @@ fn load_c3d(
                         Marker,
                     )).set_parent(points);
                 }
+                app_state.frame_rate = Some(asset.c3d.points.frame_rate);
             }
             None => {}
         }
