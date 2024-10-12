@@ -24,10 +24,11 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, load_c3d)
             .add_systems(Update, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
-                .run_if(|render_at_fixed_frame_rate: Res<AppState>| -> bool { render_at_fixed_frame_rate.render_at_fixed_frame_rate.is_none() }))
+                .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_none() || !state.render_at_fixed_frame_rate }))
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
-                .run_if(|render_at_fixed_frame_rate: Res<AppState>| -> bool { render_at_fixed_frame_rate.render_at_fixed_frame_rate.is_some() }))
+                .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
+            .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));
@@ -53,8 +54,10 @@ pub struct AppState {
     pub render_frame: bool,
     /// Frame rate of the c3d. You should not modify this value. To adjust the representation speed use render_at_fixed_frame_rate.
     pub frame_rate: Option<f32>,
-    /// Frame rate of the animation. None means maximun of your hardware (typically 60Hz of the screen). Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
-    pub render_at_fixed_frame_rate: Option<f64>,
+    /// Frame rate of the animation. Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
+    pub fixed_frame_rate: Option<f64>,
+    /// Render at fixed frame rate. If true, the representation will be at the fixed frame rate. If false, the representation will be at the Update schedule decides (typically 60 Hz).
+    pub render_at_fixed_frame_rate: bool,
 }
 
 impl AppState {
@@ -68,7 +71,8 @@ impl AppState {
             play: false,
             render_frame: false,
             frame_rate: None,
-            render_at_fixed_frame_rate: None,
+            fixed_frame_rate: None,
+            render_at_fixed_frame_rate: false,
         }
     }
 }
@@ -101,7 +105,8 @@ fn setup(
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
-    state.render_at_fixed_frame_rate = Some(250.);
+    state.fixed_frame_rate = None;
+    state.render_at_fixed_frame_rate = false;
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
@@ -152,6 +157,10 @@ fn load_c3d(
                     )).set_parent(points);
                 }
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
+                
+                if app_state.fixed_frame_rate.is_none() {
+                    app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
+                }
             }
             None => {}
         }
@@ -208,7 +217,7 @@ fn change_frame_rate(
     state: Res<AppState>,
     mut time: ResMut<Time<Fixed>>,
 ) {
-    match state.render_at_fixed_frame_rate {
+    match state.fixed_frame_rate {
         Some(frame_rate) => {
             time.set_timestep_hz(frame_rate as f64);
         }

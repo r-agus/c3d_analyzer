@@ -118,18 +118,18 @@ fn gui(world: &mut World,
                     });
                 });
 
-                if let Some(fixed_frame_rate) = app_state.render_at_fixed_frame_rate{
+                if app_state.render_at_fixed_frame_rate {
                     ui.vertical(|ui| {  
                         ui.horizontal(|ui| {                 
                             ui.spacing_mut().slider_width = ui.available_width() * 0.7;
 
                             match app_state.frame_rate {
                                 Some(c3d_frame_rate) => {
-                                    let mut speed = fixed_frame_rate / c3d_frame_rate as f64;
+                                    let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
                                     let speed_slider;
-                                    speed_slider = egui::Slider::new(&mut speed, 0.0..=2.).fixed_decimals(1);
+                                    speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
                                     ui.add(speed_slider);
-                                    app_state.render_at_fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
+                                    app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
                                 },
                                 None => {},                                
                             };
