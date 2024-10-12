@@ -1,6 +1,7 @@
 use crate::*;
 
 pub fn file_drop(
+    mut ev_loaded: EventWriter<C3dLoadedEvent>,
     mut evr_dnd: EventReader<FileDragAndDrop>,
     mut state: ResMut<AppState>,
 ) {
@@ -11,6 +12,8 @@ pub fn file_drop(
             state.reload = true;
             state.file_loaded = true;
             state.frame = 0;
+
+            ev_loaded.send(C3dLoadedEvent);
         }
     }
 }
