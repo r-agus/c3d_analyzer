@@ -157,12 +157,16 @@ fn load_c3d(
                     )).set_parent(points);
                 }
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
+                println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
                 
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
+                println!("C3D loaded");
             }
-            None => {}
+            None => {
+                println!("C3D not loaded");
+            }
         }
     }
 }

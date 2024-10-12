@@ -141,6 +141,14 @@ fn gui(world: &mut World,
             });
         });
 
+        // FPS window
+        // egui::Window::new("FPS")
+        //     .show(egui_context.get_mut(), |ui| {
+        //         ui.label(format!("{:.2}", app_state.fixed_frame_rate.unwrap_or(0.0)));
+        //         ui.label(format!("{:.2}", app_state.frame_rate.unwrap_or(0.0)));
+        //     });
+
+
         if app_state.frame != frame {
             app_state.frame = frame;
             app_state.render_frame = true;
