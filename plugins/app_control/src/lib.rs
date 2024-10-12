@@ -22,7 +22,12 @@ impl Plugin for ControlPlugin {
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
-            .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame }))
+            .add_systems(Update, (represent_points)
+                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|render_at_fixed_frame_rate: Res<AppState>| -> bool { render_at_fixed_frame_rate.render_at_fixed_frame_rate.is_none() }))
+            .add_systems(FixedUpdate, (represent_points)
+                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|render_at_fixed_frame_rate: Res<AppState>| -> bool { render_at_fixed_frame_rate.render_at_fixed_frame_rate.is_some() }))
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>();
     }
@@ -91,11 +96,11 @@ fn setup(
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    // state.path =  "walk.c3d".to_string();
+    state.path =  "walk.c3d".to_string();
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
-    state.render_at_fixed_frame_rate = Some(500);
+    state.render_at_fixed_frame_rate = None;
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
