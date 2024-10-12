@@ -29,7 +29,8 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
                 .run_if(|render_at_fixed_frame_rate: Res<AppState>| -> bool { render_at_fixed_frame_rate.render_at_fixed_frame_rate.is_some() }))
             .init_resource::<AppState>()
-            .init_resource::<GuiSidesEnabled>();
+            .init_resource::<GuiSidesEnabled>()
+            .insert_resource(Time::<Fixed>::from_hz(250.));
     }
 }
 
@@ -100,7 +101,7 @@ fn setup(
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
-    state.render_at_fixed_frame_rate = None;
+    state.render_at_fixed_frame_rate = Some(250);
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
