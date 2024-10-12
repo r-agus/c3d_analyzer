@@ -54,7 +54,7 @@ pub struct AppState {
     /// Frame rate of the c3d. You should not modify this value. To adjust the representation speed use render_at_fixed_frame_rate.
     pub frame_rate: Option<f32>,
     /// Frame rate of the animation. None means maximun of your hardware (typically 60Hz of the screen). Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
-    pub render_at_fixed_frame_rate: Option<u32>,
+    pub render_at_fixed_frame_rate: Option<f64>,
 }
 
 impl AppState {
@@ -101,7 +101,7 @@ fn setup(
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
-    state.render_at_fixed_frame_rate = Some(250);
+    state.render_at_fixed_frame_rate = Some(250.);
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
