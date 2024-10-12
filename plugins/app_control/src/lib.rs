@@ -203,3 +203,15 @@ pub fn represent_points(
         None => {}
     }
 }
+
+fn change_frame_rate(
+    state: Res<AppState>,
+    mut time: ResMut<Time<Fixed>>,
+) {
+    match state.render_at_fixed_frame_rate {
+        Some(frame_rate) => {
+            time.set_timestep_hz(frame_rate as f64);
+        }
+        None => {}
+    }
+}
