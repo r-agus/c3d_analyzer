@@ -7,3 +7,7 @@ edition = "2021"
 [dependencies]
 serde = {version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
