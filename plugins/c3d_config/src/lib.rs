@@ -111,13 +111,13 @@ pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Confi
     }
 }
 
-fn read_config(filename: &str) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
+pub fn read_config(filename: &str) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(filename)?;
     let config: HashMap<String, Value> = toml::from_str(&content)?;
     Ok(config)
 }
 
-fn parse_config(config_map: HashMap<String, Value>) -> Result<ConfigFile, String> {
+pub fn parse_config(config_map: HashMap<String, Value>) -> Result<ConfigFile, String> {
     let mut config_file = ConfigFile::default();
 
     for (key, value) in config_map {
@@ -208,10 +208,4 @@ fn parse_point_group_config(table: Map<String, Value>) -> Result<PointGroupConfi
     group_config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());
     println!("{:?}", group_config);
     Ok(group_config)
-}
-
-fn main() {
-    let config_map = read_config("./assets/example.toml").unwrap();
-    let config_file = parse_config(config_map).unwrap();
-    println!("{:?}", config_file);
 }
