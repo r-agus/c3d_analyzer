@@ -24,6 +24,27 @@ impl Config {
             point_size: None,
         }
     }
+    pub fn get_visible_points(&self) -> Option<&Vec<String>> {
+        self.visible_points.as_ref()
+    }
+    pub fn get_joins(&self) -> Option<&Vec<Vec<String>>> {
+        self.joins.as_ref()
+    }
+    pub fn add_visible_point(&mut self, point: String) {
+        if let Some(visible_points) = &mut self.visible_points {
+            visible_points.push(point);
+        } else {
+            self.visible_points = Some(vec![point]);
+        }
+    }
+    pub fn add_visible_point_group(&mut self, group: Vec<String>) {
+        if let Some(visible_points) = &mut self.visible_points {
+            visible_points.extend(group);
+        } else {
+            self.visible_points = Some(group);
+        }
+    }
+
 }
 
 #[derive(Deserialize, Debug)]
@@ -149,7 +170,7 @@ pub fn parse_config(config_map: HashMap<String, Value>) -> Result<ConfigFile, St
                         )?;
                         config_file.add_point_group_config(key, point_group_config);
                     }  else {
-                        let config = parse_individual_config(sub_table)?;
+                        let config = parse_individual_config(sub_table, &config_file.point_groups)?;
                         config_file.config_name.insert(key, config);
                     }
                 }
@@ -160,34 +181,55 @@ pub fn parse_config(config_map: HashMap<String, Value>) -> Result<ConfigFile, St
     Ok(config_file)
 }
 
-fn parse_individual_config(table: Map<String, Value>) -> Result<Config, String> {
+fn parse_individual_config(
+    table: Map<String, Value>,
+    point_groups: &Option<HashMap<String, Vec<String>>>,
+) -> Result<Config, String> {
     let mut config = Config::default();
 
     if let Some(Value::Array(visible_points)) = table.get("visible_points") {
-        config.visible_points = Some(visible_points
-            .iter()
-            .filter_map(|v| match v {
-                Value::String(s) => Some(s.clone()),
-                _ => None,
-            })
-            .collect::<Vec<String>>());
+        for item in visible_points.iter() {
+            match item {
+                // normal case: Add a single point
+                Value::String(point) => config.add_visible_point(point.clone()),
+                // case where we want to add a group of points
+                Value::Array(group_ref) if (group_ref.len() == 1 && point_groups.is_some()) => {
+                    if let Some(Value::String(group_name)) = group_ref.get(0) {
+                        if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
+                            config.add_visible_point_group(points.clone());
+                            println!("Detected group {:?} with points {:?}", group_name, points);
+                        }
+                    }
+                },
+                _ => continue,
+            }
+        }
     }
 
     if let Some(Value::Array(joins)) = table.get("joins") {
-        let mut joins_vec = Vec::new();
         for join in joins {
             if let Value::Array(points) = join {
-                let points_vec: Vec<String> = points
-                    .iter()
-                    .filter_map(|p| match p {
-                        Value::String(s) => Some(s.clone()),
-                        _ => None,
-                    })
-                    .collect();
-                joins_vec.push(points_vec);
+                let mut expanded_points = Vec::new();
+                for point in points {
+                    match point {
+                        Value::String(point_name) => expanded_points.push(point_name.clone()),
+                        Value::Array(group_ref) if (group_ref.len() == 1 && point_groups.is_some()) => {
+                            if let Some(Value::String(group_name)) = group_ref.get(0) {
+                                if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
+                                    expanded_points.extend(points.clone());
+                                    println!("Detected group {:?} with points {:?}", group_name, points);
+                                    println!("Expanded points: {:?}", expanded_points);
+                                }
+                            }
+                        },
+                        _ => continue,
+                    }
+                }
+                if expanded_points.len() > 1 {
+                    config.joins.get_or_insert(Vec::new()).push(expanded_points);
+                }
             }
         }
-        config.joins = Some(joins_vec);
     }
 
     config.point_color = table.get("point_color").and_then(|v| v.as_str().map(String::from));
