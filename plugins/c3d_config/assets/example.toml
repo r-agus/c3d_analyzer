@@ -19,7 +19,8 @@ line_thickness = 2.0
 point_size = 1.5
 
 [config2]
-visible_points = [["arm"]]
+visible_points = [["arm"], ["head"]]
 joins = [
-    [["arm"]] #Comentario
+    [["arm"]], #Comentario
+    [["head"]]
 ]
