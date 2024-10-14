@@ -82,6 +82,10 @@ impl ConfigFile {
         }
     }
 
+    pub fn get_config_map(&self) -> &HashMap<String, Config> {
+        &self.config_name
+    }
+
     pub fn get_config(&self, config_name: &str) -> Option<&Config> {
         self.config_name.get(config_name)
     }
