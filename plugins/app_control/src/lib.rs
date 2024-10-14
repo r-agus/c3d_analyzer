@@ -5,6 +5,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
+use config_plugin::{parse_config, ConfigFile};
 
 pub struct ControlPlugin;
 
@@ -31,7 +32,7 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
-            .insert_resource(Time::<Fixed>::from_hz(250.));
+            .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
     }
 }
 
@@ -46,6 +47,8 @@ pub struct AppState {
     pub c3d_path: String,
     /// Path to the configuration file.
     pub config_path: Option<String>,
+    /// configuration of the c3d file. 
+    pub config: Option<ConfigFile>,
     /// Reload the c3d file. Used to reload the c3d file when the path changes.
     pub reload: bool,
     /// File loaded. Used to know if the c3d file is loaded.
@@ -76,6 +79,7 @@ impl AppState {
             frame_rate: None,
             fixed_frame_rate: None,
             render_at_fixed_frame_rate: false,
+            config: None,
         }
     }
 }
@@ -97,7 +101,6 @@ pub struct Marker;
 #[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
 pub struct C3dMarkers;  
-    
 
 fn setup(
     mut state: ResMut<AppState>,
@@ -105,7 +108,8 @@ fn setup(
 ) {
     state.frame = 0;
     state.c3d_path =  "golpeo3.c3d".to_string();
-    state.config_path = None;
+    state.config_path = Some("assets/config_file.toml".to_string());
+    state.config = parse_config(state.config_path.as_ref().unwrap()).ok();
     state.reload = true;
     state.file_loaded = true;
     state.play = true;

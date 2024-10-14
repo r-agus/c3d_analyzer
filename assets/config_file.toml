@@ -1,0 +1,14 @@
+[point_groups]
+head = ["LFHD", "RFHD", "LBHD", "RBHD"]
+shoulder = ["LSHO", "RSHO"]
+larm = ["LUPA1", "LUPA2", "LUPA3", "LFRA", "LWRB"]
+rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
+
+[config1]
+visible_points = [["head"], ["larm"]]
+joins = [
+    [["head"]],     # Unir todos los puntos de la cabeza entre si
+    ["LUPA1", "LUPA2"], 
+    ["LUPA3", "LFRA"], 
+    ["LFRA", "LWRB"]
+]
