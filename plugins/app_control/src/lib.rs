@@ -43,7 +43,9 @@ pub struct AppState {
     /// Number of frames in the c3d file
     pub num_frames: usize,
     /// Path to the c3d file
-    pub path: String,
+    pub c3d_path: String,
+    /// Path to the configuration file.
+    pub config_path: Option<String>,
     /// Reload the c3d file. Used to reload the c3d file when the path changes.
     pub reload: bool,
     /// File loaded. Used to know if the c3d file is loaded.
@@ -65,7 +67,8 @@ impl AppState {
         AppState {
             frame: 0,
             num_frames: 0,
-            path: "".to_string(),
+            c3d_path: "".to_string(),
+            config_path: None,
             reload: false,
             file_loaded: false,
             play: false,
@@ -101,7 +104,8 @@ fn setup(
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    state.path =  "walk.c3d".to_string();
+    state.c3d_path =  "golpeo3.c3d".to_string();
+    state.config_path = None;
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
@@ -127,6 +131,7 @@ fn load_c3d(
             commands
                 .spawn((
                     PbrBundle {
+                        visibility: Visibility::Visible,
                         ..default()
                     },
                     C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.

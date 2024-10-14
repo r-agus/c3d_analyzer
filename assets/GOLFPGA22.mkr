@@ -1,0 +1,1171 @@
+!MKR#2
+
+[Autolabel]
+	LFHD	Left front head
+	RFHD	Right front head
+	LBHD	Left back head
+	RBHD	Right back head
+
+	C7	Back of neck
+	T10	Upper back
+      CLAV 	Clavicle
+	STRN	Sternum	
+CLAV_2
+STRN_2
+	LSHO	Left shoulder
+	RSHO	Right shoulder
+	
+
+	
+	LUPA1	Left upper arm inferior
+	LUPA2	Left upper arm superior
+	LUPA3	Left upper arm central
+	
+
+	LFRA	Left forearm (optional alternative anti-sym)
+	
+	LWRB	Left wrist bar pinkie side (alternative pair 1)
+	LFIN	Left finger
+
+	
+	RUPA1	Right upper arm inferior
+	RUPA2	Right upper arm superior
+	RUPA3	Right upper arm central
+	RFRA	Right forearm 
+	RWRA	Right wrist bar thumb side (alternative pair 1)
+	
+	RFIN    Right finger
+
+	LASI	Left ASIS
+	RASI	Right ASIS
+	LPSI	Left PSIS
+	RPSI	Right PSIS
+
+	LTHI	Left thigh wand marker
+	LKNE	Left knee
+	LTIB	Left tibial wand marker
+	LANK	Left ankle
+	LHEE	Left heel
+	LTOE	Left toe
+
+	RTHI	Right thigh wand marker
+	RKNE	Right knee
+	RTIB	Right tibial wand marker
+	RANK	Right ankle
+	RHEE	Right heel
+	RTOE	Right toe
+
+	OBJA
+	
+	OBJ1	Object 1
+	OBJ2	Object 2
+	OBJ3	Object 3
+	OBJ4	Object 4
+	OBJ5	Object 5
+	OBJ6	Object 6
+	
+	BALL
+{*hasta aquí marcadores externos----------------------------------------------*}	
+
+	
+	RWRB	Right wrist bar pinkie side (alternative pair 1)
+	LWRA	Left wrist bar thumb side (alternative pair 1)
+	LSHO1	Left shoulder anterior
+	LSHO2	Left shoulder posterior
+	LSHO3   LEFT shoulder MIDDLE
+	
+	LELB	Left elbow
+	LELB2 	Left elbow medial
+	
+	RSHO1	Right shoulder anterior
+	RSHO2	Right shoulder posterior
+	RSHO3   Right shoulder MIDDLE
+
+
+	RELB	Right elbow
+	RELB2 	Right elbow medial
+	
+	
+	SACR	Sacral wand marker
+	VERTEX 
+	CMENTON
+	ThoraxS
+	ThoraxI
+	AbdI
+	
+	ClubFace3
+	ClubFace4
+	ClubFace6
+	ClubFaceCenter
+{*hasta aquí puntos del cuerpo y del palo calculados----------------------------------------------*}
+
+	RSJC
+	RELJ
+	RWJC
+	RWJCE
+	LSJC
+	LELJ
+	LWJC
+	RSJC
+	LSJC
+	RHJC
+	LHJC
+	RKJC
+	LKJC
+	RAJC
+	LAJC
+	RFINJC
+	LFINJC
+	PelvisCenter
+	PELVC
+	ThoraxC
+{*hasta aquí centros articulares----------------------------------------------*}
+	RfemurCM		CM muslo
+	RtibiaCM		CM PIERNA
+	RfootCM			CM PIE
+	
+	LfemurCM		CM muslo
+	LtibiaCM		CM PIERNA
+	LfootCM			CM PIE
+	
+	ClubCM
+	CM			CENTRO DE MASAS
+	CMTOTAL			CENTRO DE MASAS SUJETO + PALO
+{*hasta aquí centros de masas----------------------------------------------*}
+		
+	%ClubFace3
+	ClubFace1
+	ClubFace2
+	ClubFace3
+	ClubFace4
+	ClubFace5
+	ClubFace6
+
+	
+
+
+
+	S1
+	S2
+	RWRBE
+	LWRAE
+	%RWRB
+        $%AvRWRB
+	RWRBC	
+	%LWRA
+        $%AvLWRA
+	LWRAC
+
+{*desde aquí dibuja el avatar mediante lineas ------------------------------------------*}
+		LFHD,RFHD,LBHD,RBHD
+		CLAV,C7
+		C7,T10
+		T10,STRN
+		STRN,CLAV
+		ThoraxS,ThoraxI
+		ThoraxI,AbdI
+		RSHO,LSHO
+		RSHO1,RSHO2,RSHO3
+		RUPA1,RUPA2,RUPA3
+		RELB,RELB2
+		RWRA,RFRA
+		RWRB,RFRA
+		RWRA,RWRB,RFIN
+		LUPA1,LUPA2,LUPA3
+		LSHO1,LSHO2,LSHO3
+		LELB,LELB2
+		LWRA,LFRA
+		LWRB,LFRA
+		LWRA,LWRB,LFIN
+		
+		LASI,RASI,
+		RASI,RPSI
+		LPSI,RPSI
+		LPSI,LASI
+		RTHI,RKNE
+		RKNE,RANK
+		LTHI,LKNE
+		LKNE,LANK
+
+		RSJC,RELJ
+		RELJ,RWJC
+		LSJC,LELJ
+		LELJ,LWJC
+		LWJC,LFIN
+		RWJC,RELJ
+		RELJ,RWJC
+		LWJC,LELJ
+		LELJ,LWJC
+		LWJC,LFIN
+		
+		LHJC,RHJC
+		LHJC,LKJC
+		LKJC,LAJC
+		LAJC,LHEE
+		LHEE,LTOE
+		RHJC,RKJC
+		RKJC,RAJC
+		RAJC,RHEE
+		RHEE,RTOE
+
+		
+		OBJA,OBJ1
+
+		OBJ1,OBJ2
+		OBJ2,ClubFace3
+		
+		ClubFace3,ClubFace4
+		ClubFace4,ClubFace6
+		ClubFace3,ClubFace5
+		ClubFace5,ClubFace6
+
+ExtremoVectorVelClubFaceCenter
+ExtremoVectorFaceVector
+ClubFaceCenter,ExtremoVectorVelClubFaceCenter
+ClubFaceCenter,ExtremoVectorFaceVector
+
+
+
+
+
+
+
+
+
+[Autolabel ESTATICO]
+	LFHD	Left front head
+	RFHD	Right front head
+	LBHD	Left back head
+	RBHD	Right back head
+
+	C7	Back of neck
+	T10	Upper back
+	CLAV 	Clavicle
+	STRN	Sternum
+
+	LSHO	Left shoulder
+	LSHO1	Left shoulder anterior
+	LSHO2	Left shoulder posterior
+
+	
+
+
+	LUPA1	Left upper arm inferior
+	LUPA2	Left upper arm superior
+	LUPA3	Left upper arm central
+	LELB	Left elbow
+	LELB2 	Left elbow medial
+	
+
+	LFRA	Left forearm (optional alternative anti-sym)
+	LWRA	Left wrist bar thumb side (alternative pair 1)
+	LWRB	Left wrist bar pinkie side (alternative pair 1)
+	LFIN	Left finger
+
+	RSHO	Right shoulder
+	RSHO1	Right shoulder anterior
+	RSHO2	Right shoulder posterior
+	
+
+	RUPA1	Right upper arm inferior
+	RUPA2	Right upper arm superior
+	RUPA3	Right upper arm central
+	RELB	Right elbow
+	RELB2 	Right elbow medial
+	
+
+	RFRA	Right forearm 
+	RWRA	Right wrist bar thumb side (alternative pair 1)
+	RWRB	Right wrist bar pinkie side (alternative pair 1)
+	RFIN    Right finger
+
+	
+
+
+	
+	LASI	Left ASIS
+	RASI	Right ASIS
+	LPSI	Left PSIS
+	RPSI	Right PSIS
+
+	LTROC	Left Trocanter
+	LTHI	Left thigh wand marker
+	LKNE	Left knee
+	LKNE2	Left Knee medial
+	LTIB	Left tibial wand marker
+	LANK	Left ankle
+	LANK2	Left ankle medial
+	LHEE	Left heel
+	LTOE	Left toe
+
+	RTROC	Right Trocanter
+	RTHI	Right thigh wand marker
+	RKNE	Right knee
+	RKNE2	Right Knee medial
+	RTIB	Right tibial wand marker
+	RANK	Right ankle
+	RANK2	Right ankle medial
+	RHEE	Right heel
+	RTOE	Right toe
+
+	
+
+	OBJA
+	
+	OBJ1	Object 1
+	OBJ2	Object 2
+	OBJ3	Object 3
+	OBJ4	Object 4
+	OBJ5	Object 5
+	OBJ6	Object 6
+		
+	BALL
+	
+	LSHO1e	Left shoulder anterior
+	LSHO2e	Left shoulder posterior
+	LSHO3e LEFT shoulder MIDDLE
+	LSHO3   LEFT shoulder MIDDLE
+	RSHO3   Right shoulder MIDDLE
+
+	RSHO1e	Right shoulder anterior
+	RSHO2e	Right shoulder posterior
+	RSHO3e Right shoulder MIDDLE
+	LELBe	Left elbow
+	LELB2e 	Left elbow medial
+	RELBe	Right elbow
+	RELB2e 	Right elbow medial	
+	RWRBE
+	LWRAE	
+	SACR	Sacral wand marker
+	VERTEX 
+	CMENTON
+	ThoraxS
+	ThoraxI
+	AbdI
+	OBJG1	Grip 1
+	OBJG2   Grip 2	
+	ClubFace3
+	ClubFace4
+	ClubFace6
+	ClubFaceCenter
+	S1
+	S2
+	
+
+	RSJC
+	RELJ
+	RWJC
+	RWJCE
+	LSJC
+	LELJ
+	LWJC
+	RSJC
+	LSJC
+	RHJC
+	LHJC
+	RKJC
+	LKJC
+	RAJC
+	LAJC
+	RFINJC
+	LFINJC
+	PelvisCenter
+
+	RfemurCM		CM muslo
+	RtibiaCM		CM PIERNA
+	RfootCM			CM PIE
+	
+	LfemurCM		CM muslo
+	LtibiaCM		CM PIERNA
+	LfootCM			CM PIE
+	
+	ClubCM
+	CM			CENTRO DE MASAS
+	CMTOTAL			CENTRO DE MASAS SUJETO + PALO
+
+		LFHD,RFHD,LBHD,RBHD
+		CLAV,C7,
+		C7,T10
+		T10,STRN
+		STRN,CLAV
+		ThoraxS,ThoraxI
+		ThoraxI,AbdI
+		RSHO,LSHO
+		RSHO1,RSHO2,RSHO3
+		RUPA1,RUPA2,RUPA3
+		RELB,RELB2
+		RWRA,RFRA
+		RWJC,RELJ
+		RWRA,RWRB,RFIN
+		LUPA1,LUPA2,LUPA3
+		LSHO1,LSHO2,LSHO3
+		LELB,LELB2
+		LWRA,LFRA
+		LWRA,LWRB,LFIN
+		
+		LASI,RASI,
+		RASI,RPSI
+		LPSI,RPSI
+		LPSI,LASI
+		RTHI,RKNE
+		RKNE,RANK
+		LTHI,LKNE
+		LKNE,LANK
+
+		RSJC,RELJ
+		RELJ,RWJC
+		LSJC,LELJ
+		LELJ,LWJC
+		LWJC,LFIN
+		RWJC,RELJ
+		RELJ,RWJC
+		LWJC,LELJ
+		LELJ,LWJC
+		LWJC,LFIN
+		
+		LHJC,RHJC
+		LHJC,LKJC
+		LKJC,LAJC
+		LAJC,LHEE
+		LHEE,LTOE
+		RHJC,RKJC
+		RKJC,RAJC
+		RAJC,RHEE
+		RHEE,RTOE
+
+		OBJG1,OBJG2
+		OBJG2,OBJ1
+		OBJA,OBJ1
+
+		OBJ1,OBJ2
+		OBJ2,OBJ3
+		OBJ2,OBJ4
+		OBJ3,OBJ4
+		OBJ4,OBJ6
+		OBJ3,OBJ5
+		OBJ5,OBJ6
+
+		RANK,RANK2		
+		LANK,LANK2
+		RKNE,RKNE2
+		LKNE,LKNE2
+		RTROC,RTHI
+		LTROC,LTHI
+		LFRA,LWRB		
+
+[Autolabel Report]
+
+	VERTEX
+	CMENTON
+	LFHD	Left front head
+	RFHD	Right front head
+	LBHD	Left back head
+	RBHD	Right back head
+
+	CLAV
+	C7
+	T10
+	STRN
+	ThoraxI
+	AbdI
+
+	RSJC
+	RELJ
+	RWRA
+	RWRB
+	RWJC
+	RFINJC
+
+	LSJC
+	LELJ
+	LWRA
+	LWRB
+	LWJC
+	LFINJC
+
+	RHJC
+	RKJC
+	RAJC
+	RHEE
+	RTOE
+
+	LHJC
+	LKJC
+	LAJC
+	LHEE
+	LTOE
+	CM			CENTRO DE MASAS
+	CMTOTAL			CENTRO DE MASAS SUJETO + PALO
+	BALL
+	RSJC_2
+	LSJC_2
+	RSJC_2,LSJC_2
+	
+	
+
+		LFHD,RFHD,LBHD,RBHD
+		VERTEX,CMENTON
+		CLAV,C7
+		C7,T10
+		T10,STRN
+		STRN,CLAV
+		ThoraxI,AbdI
+
+		RSJC,LSJC
+		RSJC,RELJ
+		RELJ,RWJC	
+		RWJC,RFINJC
+                LSJC,LELJ
+		LELJ,LWJC
+		LWJC,LFINJC
+                RHJC,LHJC
+		RHJC,RKJC
+		RKJC,RAJC
+		RAJC,RHEE
+		RAJC,RTOE
+		RHEE,RTOE
+
+
+		LHJC,LKJC
+		LKJC,LAJC
+		LAJC,LHEE
+		LAJC,LTOE
+		LHEE,LTOE
+
+		OBJA
+		OBJG1
+		OBJG2
+		OBJ1	Object 1
+		OBJ2	Object 2
+		
+		ClubFace3
+		ClubFace4
+		ClubFace6
+		ClubFace5
+		ClubFaceCenter
+
+		OBJA,OBJ1
+		OBJG1,OBJG2
+		OBJG2,OBJ1		
+		OBJ1,OBJ2
+		ClubFace3,ClubFace4
+		ClubFace4,ClubFace6
+		ClubFace6,ClubFace5
+		ClubFace5,ClubFace3
+		BALL,BALL
+
+ExtremoVectorVelClubFaceCenter
+ClubFaceCenter,ExtremoVectorVelClubFaceCenter
+
+ExtremoVectorFaceVector
+ClubFaceCenter,ExtremoVectorFaceVector
+
+ExtremoVectorVelLWJC
+LWJC,ExtremoVectorVelLWJC
+
+ExtremoVectorVelLHJC
+LHJC,ExtremoVectorVelLHJC
+
+ExtremoVectorVelLSJC
+LSJC,ExtremoVectorVelLSJC
+
+
+
+
+
+	
+
+
+		
+[Autolabel Plano ClubFaceCenter]
+
+VERTEX
+	CMENTON
+	LFHD	Left front head
+	RFHD	Right front head
+	LBHD	Left back head
+	RBHD	Right back head
+
+	CLAV
+	C7
+	T10
+	STRN
+	ThoraxI
+	AbdI
+
+	RSJC
+	RELJ
+	RWRA
+	RWRB
+	RWJC
+	RFINJC
+
+	LSJC
+	LELJ
+	LWRA
+	LWRB
+	LWJC
+	LFINJC
+
+	RHJC
+	RKJC
+	RAJC
+	RHEE
+	RTOE
+
+	LHJC
+	LKJC
+	LAJC
+	LHEE
+	LTOE
+	CM			CENTRO DE MASAS
+	CMTOTAL			CENTRO DE MASAS SUJETO + PALO
+	BALL
+	RSJC_2
+	LSJC_2
+	RSJC_2,LSJC_2
+	
+	
+
+		LFHD,RFHD,LBHD,RBHD
+		VERTEX,CMENTON
+		CLAV,C7
+		C7,T10
+		T10,STRN
+		STRN,CLAV
+		ThoraxI,AbdI
+
+		RSJC,LSJC
+		RSJC,RELJ
+		RELJ,RWJC	
+		RWRA,RWRB
+		RWRA,RFINJC
+                RWRB,RFINJC
+		LSJC,LELJ
+		LELJ,LWJC
+		LWRA,LWRB
+		LWRA,LFINJC
+                LWRB,LFINJC
+		RHJC,LHJC
+		RHJC,RKJC
+		RKJC,RAJC
+		RAJC,RHEE
+		RAJC,RTOE
+		RHEE,RTOE
+
+
+		LHJC,LKJC
+		LKJC,LAJC
+		LAJC,LHEE
+		LAJC,LTOE
+		LHEE,LTOE
+
+		OBJA
+		OBJG1
+		OBJG2
+		OBJ1	Object 1
+		OBJ2	Object 2
+		
+		ClubFace3
+		ClubFace4
+		ClubFace6
+		ClubFace5
+		ClubFaceCenter
+
+		OBJA,OBJ1
+		OBJG1,OBJG2
+		OBJG2,OBJ1		
+		OBJ1,OBJ2
+		ClubFace3,ClubFace4
+		ClubFace4,ClubFace6
+		ClubFace6,ClubFace5
+		ClubFace5,ClubFace3
+		BALL,BALL
+
+ExtremoVectorVelClubFaceCenter
+ExtremoVectorFaceVector
+
+	
+        LdClubFaceCenter punto corte plano bajada plano
+	LiClubFaceCenter punto corte plano bajada plano
+        LpdaClubFaceCenter
+	LpiaClubFaceCenter
+	LdClubFaceCenter,LiClubFaceCenter
+		LdClubFaceCenter,LpdaClubFaceCenter
+		LpdaClubFaceCenter,LpiaClubFaceCenter
+		LpiaClubFaceCenter,LiClubFaceCenter
+
+ClubFaceCenter,ExtremoVectorVelClubFaceCenter
+ClubFaceCenter,ExtremoVectorFaceVector
+GripPoint
+ExtremoVectorForceClub
+GripPoint,ExtremoVectorForceClub
+DWpalo
+ExtremoVectorWpalo
+GripPoint,ExtremoVectorWpalo
+
+
+
+[Autolabel Plano MS_Izquierdo]
+
+	VERTEX
+	CMENTON
+	LFHD	Left front head
+	RFHD	Right front head
+	LBHD	Left back head
+	RBHD	Right back head
+
+	CLAV
+	C7
+	T10
+	STRN
+	ThoraxI
+	AbdI
+
+	RSJC
+	RELJ
+	RWRA
+	RWRB
+	RWJC
+	RFINJC
+
+	LSJC
+	LELJ
+	LWRA
+	LWRB
+	LWJC
+	LFINJC
+
+	RHJC
+	RKJC
+	RAJC
+	RHEE
+	RTOE
+
+	LHJC
+	LKJC
+	LAJC
+	LHEE
+	LTOE
+	CM			CENTRO DE MASAS
+	CMTOTAL			CENTRO DE MASAS SUJETO + PALO
+	BALL
+	RSJC_2
+	LSJC_2
+	RSJC_2,LSJC_2
+	
+	
+
+		LFHD,RFHD,LBHD,RBHD
+		VERTEX,CMENTON
+		CLAV,C7
+		C7,T10
+		T10,STRN
+		STRN,CLAV
+		ThoraxI,AbdI
+
+		RSJC,LSJC
+		RSJC,RELJ
+		RELJ,RWJC	
+		RWRA,RWRB
+		RWRA,RFINJC
+                RWRB,RFINJC
+		LSJC,LELJ
+		LELJ,LWJC
+		LWRA,LWRB
+		LWRA,LFINJC
+                LWRB,LFINJC
+		RHJC,LHJC
+		RHJC,RKJC
+		RKJC,RAJC
+		RAJC,RHEE
+		RAJC,RTOE
+		RHEE,RTOE
+
+
+		LHJC,LKJC
+		LKJC,LAJC
+		LAJC,LHEE
+		LAJC,LTOE
+		LHEE,LTOE
+
+		OBJA
+		OBJG1
+		OBJG2
+		OBJ1	Object 1
+		OBJ2	Object 2
+		
+		ClubFace3
+		ClubFace4
+		ClubFace6
+		ClubFace5
+		ClubFaceCenter
+
+		OBJA,OBJ1
+		OBJG1,OBJG2
+		OBJG2,OBJ1		
+		OBJ1,OBJ2
+		ClubFace3,ClubFace4
+		ClubFace4,ClubFace6
+		ClubFace6,ClubFace5
+		ClubFace5,ClubFace3
+		BALL,BALL
+
+
+
+
+ExtremoVectorVelClubFaceCenter
+ExtremoVectorFaceVector
+
+	
+        LdMSI punto corte plano bajada plano
+	LiMSI punto corte plano bajada plano
+        LpdaMSI
+	LpiaMSI
+	LdMSI,LiMSI
+		LdMSI,LpdaMSI
+		LpdaMSI,LpiaMSI
+		LpiaMSI,LiMSI
+
+ClubFaceCenter,ExtremoVectorVelClubFaceCenter
+ClubFaceCenter,ExtremoVectorFaceVector
+
+
+[lINEAR VELOCITIES]
+
+		LVelOBJ5
+	     	LVelOBJA
+		LVelOBJ1
+		LVelOBJ2
+		LVelOBJ3
+		LVelOBJ4
+		LVelOBJ6
+		LVelOBJ5
+		LVelLWJC
+		LVelLSJC
+		LVelRSJC
+		LVelLHJC
+		LVelRHJC
+		LVelClubFaceCenter
+		LVelRWJC
+		LVelLFINJC
+		LVelPelvisCenter
+		LVelRFINJC
+		LVelCMTOTAL
+		LVelPELVC
+                LVelClubCM
+LAccelClubCM
+
+
+
+
+[ANGLES Trunk]
+
+		HeadAngle	ANGULOS EULER CABEZA RESPECTO SR GLOBAL EJES: Y GLOBA9  X FLOTANTE SRL  Z FLOTANTE SRL
+		ThoraxAngle	THORAX
+		ThoraxAngleProj THORAX proyectado en los planos del SRF
+		HeadThoraxAngle	CABEZA RESPECTO A THORAX
+		PelvisAngle	PELVIS
+                PelvisAngleProj   ANGULOS DE LOS EJES DE LA PELVIS PROYECTADOS EN LOS PLANOS DEL SISTEMA DE REFERENCIA LOCAL RESPECTO A LOS EJES DEL SISTEMA GLOBAL
+		ThoraxPelvisAngle THORAX RESPECTO A PELVIS
+ 		PelvisRThighAngle PElvis respecto MUSLO d
+		PelvisLThighAngle Pelvis respecto Muslo I
+		AngleTrunkV
+
+[Balance]
+ 
+		D_CMTOTAL_PI		DISTANCIA  DEL VERTEX AL PIE IZQUIERDO EN X
+		D_VERTEX_PI		DISTANCIA  DEL CM AL PIE IZQUIERDO EN X
+
+		D_PELVIS_PI            DISTANCIA  DEL CENTRO DE LA PELVIS AL PIE IZQUIERDO EN X
+		D_Thorax_PI            DISTANCIA  DEL VERTEX AL PIE IZQUIERDO EN X		
+
+		D_CMTOTAL_PI%		DISTANCIA PORCENTUAL DEL VERTEX AL PIE IZQUIERDO EN X
+		D_VERTEX_PI%		DISTANCIA PORCENTUAL DEL CM AL PIE IZQUIERDO EN X
+
+		D_PELVIS_PI%            DISTANCIA PORCENTUAL DEL CENTRO DE LA PELVIS AL PIE IZQUIERDO EN X
+		D_Thorax_PI%            DISTANCIA PORCENTUAL DEL VERTEX AL PIE IZQUIERDO EN X
+
+[ANGLES Lower Limbs]
+
+		RThighAngle		MUSLO
+		RThighPelvisAngle	MUSLO RESPECTO PELVIS
+		RShankAngle		PIERNA
+		RShankThighAngle	PIERNA RESPECTO A MUSLO
+		RFootAngle		PIE
+		RFootShankAngle		PIE RESPECTO A PIERNA
+
+		LThighAngle
+		LThighPelvisAngle
+		LShankAngle
+		LShankThighAngle
+		LFootAngle
+		RFootShankAngle
+
+		
+[ANGLES Upper Limbs]
+
+		RUarmAngle		BRAZO
+		RUarmThoraxAngle	BRAZO RESPECTO A THORAX
+		LUarmAngle
+		LUarmThoraxAngle
+		RFarmAngle		ANTEBRAZO
+		RFarmRUarmAngle		ANTEBRAZO RESPECTO A BRAZO
+		RFarmRUarmAngleF	ANGULO FLEXION CODO 
+		LFarmAngle
+		LFarmLUarmAngle
+		LFarmLUarmAngleF
+		RhandAngle		MANO
+		RhandRFarmAngle		MANO RESPECTO ANTEBRAZO
+		LhandAngle
+		LhandLFarmAngle
+		
+		
+[X Factor]
+
+		
+		Xfactor 		ANGULO ROTACION Z PELVIS RESPECTO THORAX
+[ANGLES CLUB]
+		
+		ClubAngle		ANGULOS EULER CABEZA DEL PALO X BASE Y PERPENDICULAR CARA Z PERPENDICULAR BASE	
+		LAG			ANGULO ENTRE VECTOR OBJ4-OBJ2 Y OBJA-OBJ2
+		VarillaRFarmAngle	VARILLA RESPECTO ANTEBRAZO
+		AngMSIz_varilla		ANGULO MS IZQUIERDO CON VARILLA
+		AngRFarm_varilla	ANGULO ANTEBRAZO DERECHO CON VARILLA
+
+[Angular velocities RAD/S Global]
+				
+           	AVelTho		VELOCIDAD ANGULOS EULER THORAX
+                AVelPel		PELVIS
+		AVelLUa		BRAZO IZQUIERDO
+		AVelLFa		ANTEBRAZO IZQUIERDO
+		AVelCLV  	PALO VARILLA Z VARILLA X PERPENDICULAR CARA
+		
+		WLBr		VELOCIDADA ANGULAR BRAZO IZQUIERDO COMO BARRA
+		WHom		VELOCIDAD ANGULAR LINEA DE HOMBROS
+		WCad		VELOCIDAD ANGULAR LINEA DE CADERAS
+		WPalo		VELOCIDAD ANGULAR VARILLA
+		
+
+[Angular velocities SRlocal]
+		WThorax
+		WmodThorax
+		WPelvis
+		WmodPelvis
+		WLUarm
+		WmodlUarm
+		WLFarm
+		WmodLFarm
+		WClubV
+		WmodClubV
+[IMPACT FACE CLUB]
+
+	VHeadClub		VECTOR VELOCIDAD CENTRO DE LA CARA
+	modVHeadClub		MODULO VECTOR VELOCIDAD CENTRO DE LA CARA 
+	AngAtt			ANGULO DE ATAQUE VECTOR VELOCIDAD CARA CON EJE X:ASCENC POSITIVO DESC NEGATIVO
+	AngAttzx		ANGULO DE ATAQUE ZX: VECTOR VELOCIDAD EN PLANO ZX CON EJE X
+	AngPath			ANGULO LINEA: VECTOR VELOCIDAD EN PLANO XY CON EL EJE X: POSITIVO AFUERA NEGATIRO ADENTRO
+	FaceVector		VECTOR PERPENDICULAR CARA
+	FaceVectorBase		VECTOR BASE DE LA CABEZA
+	AngLoftD		VECTOR CARA DEL PALO CON HORIZONTAL
+	AngHeadClubPath		VECTOR CARA DEL PALO EN XY CON EJE X
+
+	HeadClubAngle		ANGULOS EULER CARA DEL PALO
+	HeadClubAngleLoft	LOFT DESDE ANGULOS EULER
+	HeadClubAnglePath	ANGULO LINEA DESDE ANGULOS DE EULER
+
+
+
+
+	Dplane			VECTOR CARA Y VECTOR VELOCIDAD CARA
+	DPlaneFrontal		VECTOR CARA Y VECTOR VELOCIDAD CARA EN PLANO FRONTAL YZ
+	DPlaneTransv		VECTOR CARA Y VECTOR VELOCIDAD CARA EN PLANO TRANSVERSAL XY
+
+	%VHeadFace		VECTOR VELOCIDAD CARA RESPECTO SRL CARA 
+	%VHeadFaceSpinH		COMPONENTE Z VECTOR VELOCIDAD CARA RESPECTO SRL CARA: SPIN EJE HORIZONTAL
+	%VHeadFaceSpinV		COMPONENTE X VECTOR VELOCIDAD CARA RESPECTO SRL CARA: SPIN EJE VERTICA
+	%VHeadFaceSpeed		COMPONENTE Y VECTOR VELOCIDAD CARA RESPECTO SRL CARA: VELOCIDAD DESPEGUE
+
+[Velocidad Bola]
+	LVelBALL		VECTOR VELOCIDAD BOLA
+	AbsoluteBallVel		MODULO VECTOR VELOCIDAD BOLA
+	SmashFactor		VELOCIDAD BOLA DIVIDIDO POR VELOCIDAD CARA DEL PALO
+
+	LaunchAngle		ANGULO VECTOR VELOCIDAD BOLA CON EJE HORIZONTAL
+	BallDirectionAngle	ANGULO VECTOR VELOCIDAD BOLA xy CON EJE x: cerrada negativo abierta positivo	
+
+[PLANOS MOVIMIENTO]
+	
+	PlanoDVarillaI		PLANO BAJADA VARILLA CON PLANO HORIZONTAL
+	PlanoBVarillaI		PLANO SUBIDA VARILLA CON PLANO HORIZONTAL
+	PlanoDVarillaL   	PLANO BAJADA VARILLA CON PLANO LINEA DE TIRO
+	PlanoBVarillaL  	PLANO SUBIDA VARILLA CON PLANO LINEA DE TIRO
+
+
+	PlanoD_MS_IZDO_I	PLANO BAJADA MS IZQUIERDO CON PLANO HORIZONTAL
+	PlanoB_MS_IZDO_I	PLANO SUBIDA MS IZQUIERDO CON PLANO HORIZONTAL
+	PlanoD_MS_IZDO_Linea	PLANO BAJADA MS IZQUIERDO CON PLANO LINEA DE TIRO	
+	PlanoB_MS_IZDO_Linea	PLANO SUBIDA MS IZQUIERDO CON PLANO LINEA DE TIRO	
+	
+	PlanoD_VMS_IZDO_I	PLANO BAJADA MS IZQUIERDO-VARILLA  CON PLANO HORIZONTAL
+	PlanoB_VMS_IZDO_I	PLANO SUBIDA MS IZQUIERDO-VARILLA CON PLANO HORIZONTAL
+	PlanoD_VMS_IZDO_Linea	PLANO BAJADA MS ZQUIERDO-VARILLA CON PLANO LINEA DE TIRO
+	PlanoB_VMS_IZDO_Linea	PLANO SUBIDA MS ZQUIERDO-VARILLA CON PLANO LINEA DE TIRO
+
+	varilla			VECTOR DESDE OBJG1 HASTA OBJ2
+        AngPaloPlanoB		angulo del palo en el plano de subida con respecto a la vertical
+        AngPaloPlanoD		angulo del palo en el plano de bajada con respecto a la vertical
+
+[Force Vectors]
+
+P_ForcePlate1
+P_ForcePlate2
+F_ForcePlate1
+F_ForcePlate2
+ForcePlate1Fn
+ForcePlate2Fn
+ForceTotal1      M dulo de la Fuerza
+ForceTotal2
+
+ForceTotal%BW1   Modulo de la Fuerza normalizada al peso
+ForceTotal%BW2
+
+ForcePlate1Fn%W    Fuerza NORMALIZADA AL PESO
+ForcePlate2Fn%W
+ForcePlate1V%T      Fuerza Vertical normalizada al la fuerza vertical total derecha + izquierda
+ForcePlate2V%T
+ForceClub
+
+[Angular velocities GRAD/S Global]
+		
+		AVelThDegrees
+		
+
+		
+		AVelThoDegrees
+		
+
+		
+		AVelPelDegrees
+		
+
+		
+		AVelLUaDegrees
+		
+
+		
+		AVelLFaDegrees
+		
+
+		
+		AVelClubVDegrees
+		
+
+[Angular Accelerations Global]
+		AAccelTh
+		
+		AAccelThDegrees
+
+		AAccelTho
+		
+		AAccelThoDegrees
+
+		AAccelPel
+		
+		AAccelPelDegrees
+
+		AAccelLUa
+		
+		AAccelLUaDegrees
+
+		AAccelLFa
+		
+		AAccelLFaDegrees
+
+		AAccelClubV
+		
+		AAccelClubVDegrees
+
+
+[Validacion]
+
+	DR_UPA1ELB
+	DR_UPA2ELB
+	DR_UPA3ELB
+	DL_UPA1ELB
+	DL_UPA2ELB
+	DL_UPA3ELB
+
+
+
+	OBJ6_2
+	OBJ3_2
+	OBJ5_2
+
+	LSJC_V    ARTICULACION DEL HOMBRO SEGUN EL SISTEMA VICON
+	RSJC_V
+	LSJC_V2
+	RSJC_V2
+	
+	STRN_2	 
+	CLAV_2	 
+	
+	RELB_2  DESDE SISTEMA RL EN BRAZO
+	RELB2_2
+	RELJ_2
+
+	LELB_2  DESDE SISTEMA RL EN BRAZO
+	LELB2_2
+	LELJ_2
+
+	RELB2_3 DESDE SRL ANTEBRAZO CON ELB DINAMICO
+	RELJ_3
+	LELB2_3
+	LELJ_3
+
+	RELB2_4 DESDE SRL BRAZO CON ELB DINAMICO
+	RELJ_4
+	LELB2_4
+	LELJ_4
+
+
+	RWRB_2  DESDE SISTEMA RL EN BRAZO
+	LWRA_2
+	RWJC_2
+	LWJC_2
+
+	RWRB_3
+	LWRA_3
+	RWJC_3
+	LWJC_3
+
+	DOBJ12
+	DOBJ24
+	DOBJ14
+	DCLAV_C7
+	DC7_T10
+	DCLAV_T10
+	DC7_RSHO
+	DC7_LSHO
+	DT10_RSHO
+	DT10_LSHO
+	DRUPA12
+	DRUPA13
+	DRUPA32
+	DLUPA12
+	DLUPA13
+	DLUPA32
+
+	DRELJ_RFRA
+	DRELJ_RWRA
+	DRFRA_RWRA
+
+	DLELJ_LFRA
+	DLELJ_LWRB
+	DLFRA_LWRB
+
+	DRWJC_FIN
+
+
+	
+

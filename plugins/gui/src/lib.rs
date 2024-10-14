@@ -75,7 +75,7 @@ fn gui(world: &mut World,
 
     let mut app_state = world.get_resource_mut::<AppState>().unwrap();
     let mut frame  = app_state.frame;
-    let mut path = app_state.path.clone();
+    let mut path = app_state.c3d_path.clone();
     let num_frames = match app_state.num_frames {
         0 => 1,
         _ => app_state.num_frames,

@@ -8,7 +8,7 @@ pub fn file_drop(
     for ev in evr_dnd.read() {
         if let FileDragAndDrop::DroppedFile { window, path_buf } = ev {
             println!("Dropped file with path: {:?}, in window id: {:?}", path_buf, window);
-            state.path = path_buf.to_str().unwrap().to_string();
+            state.c3d_path = path_buf.to_str().unwrap().to_string();
             state.reload = true;
             state.file_loaded = true;
             state.frame = 0;
@@ -24,7 +24,7 @@ pub fn update_c3d_path(
     mut c3d_state: ResMut<C3dState>,
 ) {
     if state.reload {
-        c3d_state.handle = asset_server.load(state.path.clone());
+        c3d_state.handle = asset_server.load(state.c3d_path.clone());
         state.reload = false;
     }
 }
