@@ -132,33 +132,40 @@ pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Confi
     }
 }
 
-pub fn read_config(filename: &str) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
+fn read_config(filename: &str) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(filename)?;
     let config: HashMap<String, Value> = toml::from_str(&content)?;
     Ok(config)
 }
 
-pub fn parse_config(config_map: HashMap<String, Value>) -> Result<ConfigFile, String> {
+pub fn parse_config(filename: &str) -> Result<ConfigFile, String> {
+    let config = read_config(filename).unwrap();
     let mut config_file = ConfigFile::default();
 
-    for (key, value) in config_map {
-        match key.as_str() {
-            "point_groups" => {
-                if let Value::Table(groups) = value {
-                    for (group_name, group_value) in groups {
-                        if let Value::Array(points) = group_value {
-                            let points_vec: Vec<String> = points
-                                .iter()
-                                .filter_map(|v| match v {
-                                    Value::String(s) => Some(s.to_string()),
-                                    _ => None,
-                                })
-                                .collect();
-                            config_file.add_point_group(group_name, points_vec);
-                        }
+    // Caution: The order of the keys in the config file is not guaranteed, because it is a hashmap.
+    // We need to parse the point groups first, as they are used in the individual configs. 
+    for (key, value) in config.iter() {
+        if key == "point_groups" {
+            if let Value::Table(groups) = value {
+                for (group_name, group_value) in groups {
+                    if let Value::Array(points) = group_value {
+                        let points_vec: Vec<String> = points
+                            .iter()
+                            .filter_map(|v| match v {
+                                Value::String(s) => Some(s.to_string()),
+                                _ => None,
+                            })
+                            .collect();
+                        config_file.add_point_group(group_name.clone(), points_vec);
                     }
                 }
             }
+        }
+    }
+
+    for (key, value) in config {
+        match key.as_str() {
+            "point_groups" => {} // Already parsed
             _ => {
                 if let Value::Table(sub_table) = value {  // En el toml especificamos point_group.config, que nos crea una tabla con el nombre del point_group, con un campo config, que es el que nos interesa
                     if let Some(config) = sub_table.get("config") {
@@ -197,11 +204,13 @@ fn parse_individual_config(
                     if let Some(Value::String(group_name)) = group_ref.get(0) {
                         if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
                             config.add_visible_point_group(points.clone());
-                            println!("Detected group {:?} with points {:?}", group_name, points);
+                            // println!("Detected group {:?} with points {:?}", group_name, points);
                         }
                     }
                 },
-                _ => continue,
+                Value::Array(group_ref) => println!("Detected unexpected group reference: {:?}", group_ref),
+                _ => println!("Invalid point in visible_points: {:?}", item),
+                
             }
         }
     }
@@ -217,12 +226,14 @@ fn parse_individual_config(
                             if let Some(Value::String(group_name)) = group_ref.get(0) {
                                 if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
                                     expanded_points.extend(points.clone());
-                                    println!("Detected group {:?} with points {:?}", group_name, points);
-                                    println!("Expanded points: {:?}", expanded_points);
                                 }
                             }
                         },
-                        _ => continue,
+                        Value::Array(group_ref) => println!("Detected unexpected group reference: {:?}. Length of group reference: {}. point_groups: {:?}", group_ref, group_ref.len(), point_groups),
+                        _ => {
+                            println!("Invalid point in joins: {:?}", point);
+                            continue
+                        },
                     }
                 }
                 if expanded_points.len() > 1 {

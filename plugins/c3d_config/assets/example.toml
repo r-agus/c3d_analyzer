@@ -17,3 +17,9 @@ point_color = "red"
 join_color = "green"
 line_thickness = 2.0
 point_size = 1.5
+
+[config2]
+visible_points = [["arm"]]
+joins = [
+    [["arm"]] #Comentario
+]
