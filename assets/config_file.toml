@@ -24,3 +24,9 @@ joins = [
     ["LUPA3", "LFRA"], 
     ["LFRA", "LWRB"]
 ]
+
+
+[solo_objetos]
+visible_points = [["objects"], "BALL"]
+
+joins = []
