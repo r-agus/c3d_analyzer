@@ -1,1 +1,4 @@
-/target
+# Ignore target from any directory
+**/target
+# Ignore .vscode settings
+.vscode
