@@ -44,7 +44,12 @@ impl Config {
             self.visible_points = Some(group);
         }
     }
-
+    pub fn contains_point(&self, label: &str) -> bool {
+        match &self.visible_points {
+            Some(points) => points.contains(&label.to_string()),
+            None => false,
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -121,6 +126,13 @@ impl ConfigFile {
             let mut point_groups_config = HashMap::new();
             point_groups_config.insert(point_group_name, config);
             self.point_groups_config = Some(point_groups_config);
+        }
+    }
+
+    pub fn contains_point(&self, config: &str, label: &str) -> bool {
+        match self.config_name.get(config) {
+            Some(config) => config.contains_point(label),
+            None => false,
         }
     }
 }

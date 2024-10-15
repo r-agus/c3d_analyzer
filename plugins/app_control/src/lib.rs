@@ -47,6 +47,8 @@ pub struct AppState {
     pub c3d_path: String,
     /// Path to the configuration file.
     pub config_path: Option<String>,
+    /// Current configuration of the c3d file. Must be defined in the configuration file.
+    pub current_config: Option<String>,
     /// configuration of the c3d file. 
     pub config: Option<ConfigFile>,
     /// Reload the c3d file. Used to reload the c3d file when the path changes.
@@ -80,6 +82,7 @@ impl AppState {
             fixed_frame_rate: None,
             render_at_fixed_frame_rate: false,
             config: None,
+            current_config: None,
         }
     }
 }
@@ -108,6 +111,7 @@ fn setup(
 ) {
     state.frame = 0;
     state.c3d_path =  "golpeo3.c3d".to_string();
+    state.current_config = Some("config1".to_string());
     state.config_path = Some("assets/config_file.toml".to_string());
     state.config = parse_config(state.config_path.as_ref().unwrap()).ok();
     state.reload = true;
@@ -141,10 +145,10 @@ fn load_c3d(
                     C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.
                 ))
                 .id();
-        
+        let current_config = app_state.current_config.as_deref().unwrap_or("");
         match asset {
             Some(asset) => {
-                for _ in 0..asset.c3d.points.labels.len() {
+                for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
                         Vec3::new(1.0, 1.0, 1.0),
                         Quat::from_rotation_y(0.0),
@@ -160,6 +164,11 @@ fn load_c3d(
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
+                            visibility: if app_state.config.as_ref().unwrap().contains_point(current_config, label) {
+                                Visibility::Visible
+                            } else {
+                                Visibility::Hidden
+                            },
                             ..default()
                         },
                         Marker,
