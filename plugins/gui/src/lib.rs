@@ -75,7 +75,7 @@ fn gui(world: &mut World,
 
     let mut app_state = world.get_resource_mut::<AppState>().unwrap();
     let mut frame  = app_state.frame;
-    let mut path = app_state.path.clone();
+    let mut path = app_state.c3d_path.clone();
     let num_frames = match app_state.num_frames {
         0 => 1,
         _ => app_state.num_frames,
@@ -85,31 +85,69 @@ fn gui(world: &mut World,
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.get_mut(), |ui| {
 
-            let slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
+            let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
 
             ui.spacing_mut().slider_width = half_width;
             ui.spacing_mut().text_edit_width = half_width * 0.35;
             ui.spacing_mut().tooltip_width = half_width * 0.5;
 
-            ui.vertical_centered(|ui| {
-                ui.horizontal(|ui| {
-                    // ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {  // This might be an egui bug
-                    let path_label = ui.label("Path: ");
-                    ui.text_edit_singleline(&mut path)
-                        .labelled_by(path_label.id)
-                        .on_hover_text(path);
-                        
-                    ui.label("Frame:");
-                    ui.add(slider
-                        .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
-                    );
-                    ui.label("Play:");
-                    ui.checkbox(&mut app_state.play, "");
-                    // });
+            ui.horizontal(|ui| {
+                // ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {  // This might be an egui bug
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        let path_label = ui.label("Path: ");
+                        ui.text_edit_singleline(&mut path)
+                            .labelled_by(path_label.id)
+                            .on_hover_text(path);
+                    });
                 });
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Frame:");
+                        ui.add(frame_slider
+                            .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
+                        );
+                    });
+                });
+
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Play:");
+                        ui.checkbox(&mut app_state.play, "");
+                    });
+                });
+
+                if app_state.render_at_fixed_frame_rate {
+                    ui.vertical(|ui| {  
+                        ui.horizontal(|ui| {                 
+                            ui.spacing_mut().slider_width = ui.available_width() * 0.7;
+
+                            match app_state.frame_rate {
+                                Some(c3d_frame_rate) => {
+                                    let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
+                                    let speed_slider;
+                                    speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
+                                    ui.add(speed_slider);
+                                    app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
+                                },
+                                None => {},                                
+                            };
+                        });
+                    });
+                }
+
+                // });
             });
         });
+
+        // FPS window
+        // egui::Window::new("FPS")
+        //     .show(egui_context.get_mut(), |ui| {
+        //         ui.label(format!("{:.2}", app_state.fixed_frame_rate.unwrap_or(0.0)));
+        //         ui.label(format!("{:.2}", app_state.frame_rate.unwrap_or(0.0)));
+        //     });
+
 
         if app_state.frame != frame {
             app_state.frame = frame;
