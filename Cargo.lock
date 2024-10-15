@@ -1744,6 +1744,8 @@ dependencies = [
 name = "config_plugin"
 version = "0.1.0"
 dependencies = [
+ "bevy",
+ "bevy_app",
  "serde",
  "toml",
 ]

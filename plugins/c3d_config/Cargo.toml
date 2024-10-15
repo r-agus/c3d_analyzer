@@ -5,6 +5,8 @@ description = "Plugin to manage c3d configuration"
 edition = "2021"
 
 [dependencies]
+bevy = "0.14.2" 
+bevy_app = "^0.14"
 serde = {version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"
 
