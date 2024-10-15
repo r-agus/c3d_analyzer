@@ -3,9 +3,14 @@ head = ["LFHD", "RFHD", "LBHD", "RBHD"]
 shoulders = ["LSHO", "RSHO"]
 larm = ["LUPA1", "LUPA2", "LUPA3", "LFRA", "LWRB"]
 rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
+
 lhand = ["LWRB", "LFIN"]
 rhand = ["RWRB", "RFIN"]
+hands = ["(L|R)WRB", ".FIN"]   # Utilizamos expresiones regulares para encontrar patrones
+
 objects = ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"]
+objects_re = ["OBJ[1-Z]"]
+
 lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
 rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 
@@ -13,7 +18,8 @@ rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 visible_points = [
     ["head"], 
     ["larm"], ["rarm"], ["shoulders"], "C7",
-    ["lhand"], ["rhand"],
+#    ["lhand"], ["rhand"],
+    ["hands"],
     ["lleg"], ["rleg"],
     ["objects"], "BALL"
 ]
@@ -27,6 +33,6 @@ joins = [
 
 
 [solo_objetos]
-visible_points = [["objects"], "BALL"]
+visible_points = [["objects_re"], "BALL"]
 
 joins = []

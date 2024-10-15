@@ -164,7 +164,7 @@ fn load_c3d(
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
-                            visibility: if app_state.config.as_ref().unwrap().contains_point(current_config, label) {
+                            visibility: if app_state.config.as_ref().unwrap().contains_point_regex(current_config, label) {
                                 Visibility::Visible
                             } else {
                                 Visibility::Hidden

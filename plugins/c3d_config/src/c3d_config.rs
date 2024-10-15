@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy::asset::io::Reader;
+use bevy::asset::LoadContext;
+use bevy::{asset::AssetLoader, prelude::*};
 use bevy::reflect::TypePath;
 
 use serde::Deserialize;
@@ -8,7 +10,7 @@ use toml::{Value, map::Map};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    visible_points: Option<Vec<String>>,
+    visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
     point_color: Option<String>,
     join_color: Option<String>,
@@ -133,9 +135,30 @@ impl ConfigFile {
         }
     }
 
+    #[deprecated(
+        since = "1.0.0",
+        note = "contains_point is deprecated, use contains_point_regex instead"
+    )]
     pub fn contains_point(&self, config: &str, label: &str) -> bool {
         match self.config_name.get(config) {
             Some(config) => config.contains_point(label),
+            None => false,
+        }
+    }
+
+    pub fn contains_point_regex(&self, config: &str, label: &str) -> bool {
+        match self.config_name.get(config) {
+            Some(config) => {
+                if let Some(visible_points) = config.get_visible_points() {
+                    for point in visible_points {
+                        if regex::Regex::new(&("^".to_owned() + point + "$")).unwrap().is_match( label) {
+                            println!("Matched point: {}", label);
+                            return true;
+                        }
+                    }
+                }
+                false
+            }
             None => false,
         }
     }
@@ -149,6 +172,35 @@ pub struct ConfigState {
     pub config_file: Handle<ConfigFile>,
     pub loaded: bool,
 }
+
+/// Loader for C3D configuration files
+// #[derive(Default)]
+// pub struct ConfigLoader;
+
+// impl AssetLoader for ConfigLoader {
+//     type Asset = ConfigFile;
+//     type Settings = ();
+//     type Error = std::io::Error;
+//     fn load(
+//         &self,
+//         reader: &mut Reader,
+//         settings: &Self::Settings,
+//         _load_context: &mut LoadContext,
+//     ) -> Result<Text, Self::Error> {
+//         let mut bytes = Vec::new();
+//         reader.read_to_end(&mut bytes).await?;
+//         let value = if let Some(ref text) = settings.text_override {
+//             text.clone()
+//         } else {
+//             String::from_utf8(bytes).unwrap()
+//         };
+//         Ok(Text(value))
+//     }
+
+//     fn extensions(&self) -> &[&str] {
+//         &["txt"]
+//     }
+// }
 
 pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Config {
     Config {
