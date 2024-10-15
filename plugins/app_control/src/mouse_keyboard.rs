@@ -24,6 +24,9 @@ pub fn keyboard_controls (
             KeyCode::KeyT => {
                 gui_state.timeline = !gui_state.timeline;
             }
+            KeyCode::AltLeft => {
+                state.render_at_fixed_frame_rate = !state.render_at_fixed_frame_rate;
+            }
             _ => {}
         }
     }    

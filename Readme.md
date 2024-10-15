@@ -37,7 +37,7 @@ Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones 
 - [ ] Editar ficheros de configuración
 - [x] Representar el fichero C3D
 - [x] Añadir controles de tiempo sobre un C3D (_play/pause_ y control del _frame_ )
-- [ ] Añadir un eje de tiempo
+- [x] Añadir un eje de tiempo
 - [x] Añadir una escena 3D y una cámara
 - [ ] Posibilidad de cambiar la escena en _runtime_
 - [ ] Calcular y representar datos biomecánicos

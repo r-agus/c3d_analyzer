@@ -5,6 +5,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
+use config_plugin::{parse_config, ConfigFile};
 
 pub struct ControlPlugin;
 
@@ -22,46 +23,102 @@ impl Plugin for ControlPlugin {
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
-            .add_systems(Update, (represent_points).run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame }))
+            .add_systems(Update, (represent_points)
+                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_none() || !state.render_at_fixed_frame_rate }))
+            .add_systems(FixedUpdate, (represent_points)
+                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
+            .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
-            .init_resource::<GuiSidesEnabled>();
+            .init_resource::<GuiSidesEnabled>()
+            .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
     }
 }
 
 #[derive(Resource, Default, Debug)]
+/// AppState contains the relevant information of the c3d file to be loaded and rendered, and the way of representing it.
 pub struct AppState {
-    pub frame: usize,       // Current frame
-    pub num_frames: usize,  // Number of frames in the c3d file
-    pub path: String,
+    /// Current frame
+    pub frame: usize,
+    /// Number of frames in the c3d file
+    pub num_frames: usize,
+    /// Path to the c3d file
+    pub c3d_path: String,
+    /// Path to the configuration file.
+    pub config_path: Option<String>,
+    /// Current configuration of the c3d file. Must be defined in the configuration file.
+    pub current_config: Option<String>,
+    /// configuration of the c3d file. 
+    pub config: Option<ConfigFile>,
+    /// Reload the c3d file. Used to reload the c3d file when the path changes.
     pub reload: bool,
+    /// File loaded. Used to know if the c3d file is loaded.
     pub file_loaded: bool,
-    pub play: bool,         // Play the animation
-    pub render_frame: bool, // Send a order to render the frame. Ignores the play state. Must set manually to true every frame.
+    /// Play the animation
+    pub play: bool,
+    /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
+    pub render_frame: bool,
+    /// Frame rate of the c3d. You should not modify this value. To adjust the representation speed use render_at_fixed_frame_rate.
+    pub frame_rate: Option<f32>,
+    /// Frame rate of the animation. Fixed is to match the c3d file frame rate, or any other frame rate. May loose information if the frame rate is higher than your hardware maximun.
+    pub fixed_frame_rate: Option<f64>,
+    /// Render at fixed frame rate. If true, the representation will be at the fixed frame rate. If false, the representation will be at the Update schedule decides (typically 60 Hz).
+    pub render_at_fixed_frame_rate: bool,
+}
+
+impl AppState {
+    pub fn default() -> Self {
+        AppState {
+            frame: 0,
+            num_frames: 0,
+            c3d_path: "".to_string(),
+            config_path: None,
+            reload: false,
+            file_loaded: false,
+            play: false,
+            render_frame: false,
+            frame_rate: None,
+            fixed_frame_rate: None,
+            render_at_fixed_frame_rate: false,
+            config: None,
+            current_config: None,
+        }
+    }
 }
 
 #[derive(Resource, Default, Debug)]
+/// GuiSidesEnabled contains the information of the GUI sides that are enabled.
 pub struct GuiSidesEnabled {
+    /// The inspector contains the hierarchy of the entities (world) and the properties of the selected entity.
     pub hierarchy_inspector: bool,
+    /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
     pub timeline: bool,
 }
 
 
 #[derive(Component)]
-pub struct Marker;      // This is the marker that represents the points in the C3D file
+/// This is the marker that represents the points in the C3D file
+pub struct Marker;      
 
 #[derive(Component)]
-pub struct C3dMarkers;  // This is a bunch of markers (parent of Marker)
-    
+/// This is a bunch of markers (parent of Marker)
+pub struct C3dMarkers;  
 
 fn setup(
     mut state: ResMut<AppState>,
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    state.path =  "walk.c3d".to_string();
+    state.c3d_path =  "golpeo3.c3d".to_string();
+    state.current_config = Some("config1".to_string());
+    state.config_path = Some("assets/config_file.toml".to_string());
+    state.config = parse_config(state.config_path.as_ref().unwrap()).ok();
     state.reload = true;
     state.file_loaded = true;
     state.play = true;
+    state.fixed_frame_rate = None;
+    state.render_at_fixed_frame_rate = false;
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
@@ -74,6 +131,7 @@ fn load_c3d(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
+    mut app_state: ResMut<AppState>,
 ) {
     if let Some(_) = events.read().last() {
         let asset = c3d_assets.get(&c3d_state.handle);
@@ -81,15 +139,16 @@ fn load_c3d(
             commands
                 .spawn((
                     PbrBundle {
+                        visibility: Visibility::Visible,
                         ..default()
                     },
                     C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.
                 ))
                 .id();
-        
+        let current_config = app_state.current_config.as_deref().unwrap_or("");
         match asset {
             Some(asset) => {
-                for _ in 0..asset.c3d.points.labels.len() {
+                for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
                         Vec3::new(1.0, 1.0, 1.0),
                         Quat::from_rotation_y(0.0),
@@ -105,13 +164,27 @@ fn load_c3d(
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
+                            visibility: if app_state.config.as_ref().unwrap().contains_point(current_config, label) {
+                                Visibility::Visible
+                            } else {
+                                Visibility::Hidden
+                            },
                             ..default()
                         },
                         Marker,
                     )).set_parent(points);
                 }
+                app_state.frame_rate = Some(asset.c3d.points.frame_rate);
+                println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
+                
+                if app_state.fixed_frame_rate.is_none() {
+                    app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
+                }
+                println!("C3D loaded");
             }
-            None => {}
+            None => {
+                println!("C3D not loaded");
+            }
         }
     }
 }
@@ -157,6 +230,18 @@ pub fn represent_points(
                     state.frame = 0;
                 }        
             }
+        }
+        None => {}
+    }
+}
+
+fn change_frame_rate(
+    state: Res<AppState>,
+    mut time: ResMut<Time<Fixed>>,
+) {
+    match state.fixed_frame_rate {
+        Some(frame_rate) => {
+            time.set_timestep_hz(frame_rate as f64);
         }
         None => {}
     }

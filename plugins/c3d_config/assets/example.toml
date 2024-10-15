@@ -1,0 +1,26 @@
+[point_groups]
+head = ["marker1", "marker2"]
+arm = ["3", "4", "5"]
+
+[head.config]
+point_color = "blue"
+point_size = 2.0
+
+
+[default_config]
+visible_points = [["head"], "marker3", "marker4"]
+joins = [
+    [["head"]],
+    ["marker2", "marker3", "marker4"]
+]
+point_color = "red"
+join_color = "green"
+line_thickness = 2.0
+point_size = 1.5
+
+[config2]
+visible_points = [["arm"], ["head"]]
+joins = [
+    [["arm"]], #Comentario
+    [["head"]]
+]
