@@ -1,6 +1,6 @@
-use bevy::asset::io::Reader;
-use bevy::asset::LoadContext;
-use bevy::{asset::AssetLoader, prelude::*};
+// use bevy::asset::io::Reader;
+// use bevy::asset::{LoadContext, AssetLoader};
+use bevy:: prelude::*;
 use bevy::reflect::TypePath;
 
 use serde::Deserialize;
@@ -151,7 +151,10 @@ impl ConfigFile {
             Some(config) => {
                 if let Some(visible_points) = config.get_visible_points() {
                     for point in visible_points {
-                        if regex::Regex::new(&("^".to_owned() + point + "$")).unwrap().is_match( label) {
+                        let re = 
+                            if point.starts_with("_"){point.strip_prefix("_").unwrap()}
+                            else {&("^".to_owned() + point + "$")};
+                        if regex::Regex::new(re).unwrap().is_match( label) {
                             println!("Matched point: {}", label);
                             return true;
                         }

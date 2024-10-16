@@ -29,6 +29,7 @@ Este formato es un estándar, por eso se implementa. Tendrá las siguientes "Key
     - **join_color** es el color de la unión de los puntos del grupo. Solo se tiene en cuenta si *point_group* se utiliza en *joins*
     - **line_thickness:** grosor de la unión. Solo se tiene en cuenta si *point_group* se utiliza en *joins*
 
+>**Pro tip:** Cuando el sistema lee la configuración, trata los puntos como expresiones regulares (_regex_), por los que es perfectamente válido insertar una _regex_ en un punto para seleccionar varios. Por defecto se añaden modificadores al punto: `^` y `$`. Si quieres eliminar este comportamiento (que no se añadan estos modificadores), el nombre del punto debe empezar con `_`. Por ejemplo, si tenemos un punto llamado "mkr", podemos seleccionar este punto escribiendo "mkr" en _visible\_points_, o en un _point\_group_. Pero si queremos seleccionar _todos_ los puntos que contengan la cadena "mkr", escribiremos "_mkr".
 
 ## Estructura ficheros de configuración ".mkr"
 
