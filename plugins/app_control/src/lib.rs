@@ -1,11 +1,11 @@
 mod file_drop;
 mod mouse_keyboard;
 
-use bevy::{asset::AssetMetaCheck, prelude::*}; 
+use bevy::{asset::AssetMetaCheck, ecs::query, prelude::*}; 
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
-use config_plugin::{parse_config, ConfigFile};
+use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigState};
 
 pub struct ControlPlugin;
 
@@ -19,15 +19,17 @@ impl Plugin for ControlPlugin {
                         }
                 )))
             .add_plugins((C3dPlugin, DefaultPickingPlugins))
+            .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup)
-            .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
+            .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
+            .add_systems(First, file_drop::update_configc3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_config } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
             .add_systems(Update, (represent_points)
-                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_none() || !state.render_at_fixed_frame_rate }))
             .add_systems(FixedUpdate, (represent_points)
-                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
@@ -46,15 +48,17 @@ pub struct AppState {
     /// Path to the c3d file
     pub c3d_path: String,
     /// Path to the configuration file.
-    pub config_path: Option<String>,
+    pub config_path: String,
     /// Current configuration of the c3d file. Must be defined in the configuration file.
     pub current_config: Option<String>,
-    /// configuration of the c3d file. 
-    pub config: Option<ConfigFile>,
     /// Reload the c3d file. Used to reload the c3d file when the path changes.
-    pub reload: bool,
+    pub reload_c3d: bool,
+    /// Reload the configuration file. Used to reload the configuration file when the path changes.
+    pub reload_config: bool,
     /// File loaded. Used to know if the c3d file is loaded.
-    pub file_loaded: bool,
+    pub c3d_file_loaded: bool,
+    /// Configuration loaded. Used to know if the configuration file is loaded.
+    pub config_loaded: bool,
     /// Play the animation
     pub play: bool,
     /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
@@ -73,15 +77,17 @@ impl AppState {
             frame: 0,
             num_frames: 0,
             c3d_path: "".to_string(),
-            config_path: None,
-            reload: false,
-            file_loaded: false,
+            config_path: "".to_string(),
+            reload_c3d: false,
+            config_loaded: false,
+            c3d_file_loaded: false,
+            reload_config: false,
             play: false,
             render_frame: false,
             frame_rate: None,
             fixed_frame_rate: None,
             render_at_fixed_frame_rate: false,
-            config: None,
+            // config: None,
             current_config: None,
         }
     }
@@ -112,10 +118,9 @@ fn setup(
     state.frame = 0;
     state.c3d_path =  "golpeo3.c3d".to_string();
     state.current_config = Some("config1".to_string());
-    state.config_path = Some("assets/config_file.toml".to_string());
-    state.config = parse_config(state.config_path.as_ref().unwrap()).ok();
-    state.reload = true;
-    state.file_loaded = true;
+    state.config_path = "config_file.toml".to_string();
+    state.reload_c3d = true;
+    state.c3d_file_loaded = true;
     state.play = true;
     state.fixed_frame_rate = None;
     state.render_at_fixed_frame_rate = false;
@@ -132,21 +137,32 @@ fn load_c3d(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
     mut app_state: ResMut<AppState>,
+    config_state: Res<ConfigState>,
+    config_assets: Res<Assets<ConfigC3dAsset>>,
 ) {
     if let Some(_) = events.read().last() {
-        let asset = c3d_assets.get(&c3d_state.handle);
+        let c3d_asset = c3d_assets.get(&c3d_state.handle);
         let points = 
             commands
                 .spawn((
                     PbrBundle {
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         ..default()
                     },
-                    C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.
+                    C3dMarkers  // This is a bunch of markers
                 ))
                 .id();
+        let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
-        match asset {
+        let config = match config_asset {
+            Some(asset) => parse_config(&asset.config, false).ok(),
+            None => {
+                println!("Config not loaded");
+                None
+            }
+        };
+        
+        match c3d_asset {
             Some(asset) => {
                 for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
@@ -164,10 +180,15 @@ fn load_c3d(
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
-                            visibility: if app_state.config.as_ref().unwrap().contains_point_regex(current_config, label) {
-                                Visibility::Visible
-                            } else {
-                                Visibility::Hidden
+                            visibility: match &config {
+                                Some(config) => {
+                                    if config.contains_point_regex(current_config, label) {
+                                        Visibility::Visible
+                                    } else {
+                                        Visibility::Hidden
+                                    }
+                                }
+                                None => { Visibility::Visible }
                             },
                             ..default()
                         },

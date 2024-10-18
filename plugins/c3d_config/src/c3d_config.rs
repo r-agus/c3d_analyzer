@@ -1,5 +1,3 @@
-// use bevy::asset::io::Reader;
-// use bevy::asset::{LoadContext, AssetLoader};
 use bevy:: prelude::*;
 use bevy::reflect::TypePath;
 
@@ -167,44 +165,6 @@ impl ConfigFile {
     }
 }
 
-/// State for configuration of C3D files
-/// Includes the path to the file, the handle to the asset, and whether the file has been loaded
-#[derive(Resource, Default, Debug)]
-pub struct ConfigState {
-    pub path: String,
-    pub config_file: Handle<ConfigFile>,
-    pub loaded: bool,
-}
-
-/// Loader for C3D configuration files
-// #[derive(Default)]
-// pub struct ConfigLoader;
-
-// impl AssetLoader for ConfigLoader {
-//     type Asset = ConfigFile;
-//     type Settings = ();
-//     type Error = std::io::Error;
-//     fn load(
-//         &self,
-//         reader: &mut Reader,
-//         settings: &Self::Settings,
-//         _load_context: &mut LoadContext,
-//     ) -> Result<Text, Self::Error> {
-//         let mut bytes = Vec::new();
-//         reader.read_to_end(&mut bytes).await?;
-//         let value = if let Some(ref text) = settings.text_override {
-//             text.clone()
-//         } else {
-//             String::from_utf8(bytes).unwrap()
-//         };
-//         Ok(Text(value))
-//     }
-
-//     fn extensions(&self) -> &[&str] {
-//         &["txt"]
-//     }
-// }
-
 pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Config {
     Config {
         point_color: override_config.point_color.clone().or_else(|| base.point_color.clone()),
@@ -217,14 +177,14 @@ pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Confi
 }
 
 
-fn read_config(filename: &str) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
-    let content = fs::read_to_string(filename)?;
+fn read_config(file_or_string: &str, from_file: bool) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
+    let content = if from_file {fs::read_to_string(file_or_string)?} else {file_or_string.to_string()};
     let config: HashMap<String, Value> = toml::from_str(&content)?;
     Ok(config)
 }
 
-pub fn parse_config(filename: &str) -> Result<ConfigFile, String> {
-    let config = read_config(filename).unwrap();
+pub fn parse_config(file_or_string: &str, from_file: bool) -> Result<ConfigFile, String> {
+    let config = read_config(file_or_string, from_file).unwrap();
     let mut config_file = ConfigFile::default();
 
     // Caution: The order of the keys in the config file is not guaranteed, because it is a hashmap.
