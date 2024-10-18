@@ -1,7 +1,7 @@
 mod file_drop;
 mod mouse_keyboard;
 
-use bevy::{asset::AssetMetaCheck, ecs::query, prelude::*}; 
+use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
