@@ -16,6 +16,9 @@ objects_re = ["OBJ[1-Z]"]
 lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
 rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 
+[head.config]
+
+
 [config1]
 visible_points = [
     ["head"], 
