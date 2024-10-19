@@ -47,11 +47,50 @@ impl Config {
             self.visible_points = Some(group);
         }
     }
+    #[deprecated(
+        since = "1.0.0",
+        note = "contains_point is deprecated, use contains_point_regex instead"
+    )]
     pub fn contains_point(&self, label: &str) -> bool {
         match &self.visible_points {
             Some(points) => points.contains(&label.to_string()),
             None => false,
         }
+    }
+
+    pub fn contains_point_regex(&self, label: &str) -> bool {
+        match &self.visible_points {
+            Some(points) => {
+                for point in points {
+                    let re = 
+                        if point.starts_with("_"){ point.strip_prefix("_").unwrap() }
+                        else {&("^".to_owned() + point + "$")};
+                    if regex::Regex::new(re).unwrap().is_match(label) {
+                        return true;
+                    }
+                }
+                false
+            }
+            None => false,
+        }
+    }
+
+    pub fn get_all_points_that_match(&self, label: &str) -> Vec<String> {
+        let mut matching_points = Vec::new();
+        match &self.visible_points {
+            Some(points) => {
+                for point in points {
+                    let re = 
+                        if point.starts_with("_"){ point.strip_prefix("_").unwrap() }
+                        else {&("^".to_owned() + point + "$")};
+                    if regex::Regex::new(re).unwrap().is_match(label) {
+                        matching_points.push(point.clone());
+                    }
+                }
+            }
+            None => {}
+        }
+        matching_points
     }
 }
 
@@ -146,22 +185,19 @@ impl ConfigFile {
 
     pub fn contains_point_regex(&self, config: &str, label: &str) -> bool {
         match self.config_name.get(config) {
-            Some(config) => {
-                if let Some(visible_points) = config.get_visible_points() {
-                    for point in visible_points {
-                        let re = 
-                            if point.starts_with("_"){point.strip_prefix("_").unwrap()}
-                            else {&("^".to_owned() + point + "$")};
-                        if regex::Regex::new(re).unwrap().is_match( label) {
-                            println!("Matched point: {}", label);
-                            return true;
-                        }
-                    }
-                }
-                false
-            }
+            Some(config) => config.contains_point_regex(label),            
             None => false,
         }
+    }
+
+    pub fn get_all_points_that_match(&self, config: &str, label: &str) -> Vec<String> {
+        let matching_points = match self.config_name.get(config) {
+            Some(config) => {
+                config.get_all_points_that_match(label)
+            }
+            None => { Vec::new() }
+        };
+        matching_points
     }
 }
 
