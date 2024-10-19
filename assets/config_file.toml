@@ -1,7 +1,9 @@
 [point_groups]
 head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
 shoulders = ["LSHO", "RSHO"]
-larm = ["LUPA1", "LUPA2", "LUPA3", "LFRA", "LWRB"]
+rshoulders1 = ["RSHO1", "RSHO2", "RSHO3"]
+lshoulders1 = ["LSHO1", "LSHO2", "LSHO3"]
+larm = ["LUPA1", "LUPA2", "LFRA", "LWRB"]
 rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
 
 lhand = ["LWRB", "LFIN"]
@@ -18,20 +20,21 @@ rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 visible_points = [
     ["head"], 
     ["larm"], ["rarm"], ["shoulders"], "C7",
-#    ["lhand"], ["rhand"],
-#    ["hands"],
     ["lleg"], ["rleg"],
-    ["objects_re"], "BALL"
+    ["objects_re"], "BALL",
+    "LWRB"
 ]
 
 joins = [
     [["head"]],     # Unir todos los puntos de la cabeza
-    ["LUPA1", "LUPA2"], 
-    ["LUPA3", "LFRA"], 
-    [["objects_re"]],
+    ["LUPA1", "LUPA2", "LFRA"], # Error con LWRB
+    [["rarm"]],
+    ["CLAV", "C7", "T10", "STRN", "CLAV"],
+    ["ThoraxS", "ThoraxI", "AbdI"],
+    ["RSHO", "LSHO"],
+    ["LASI", "RASI", "RPSI", "LPSI", "LASI"],
     [["lleg"]],
     [["rleg"]]
-    # ["LFRA", "LWRB"]
 ]
 
 
