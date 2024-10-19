@@ -138,6 +138,14 @@ impl ConfigFile {
         self.config_name.get(config_name)
     }
 
+    pub fn get_all_configs(&self) -> Vec<&Config> {
+        self.config_name.values().collect()
+    }
+
+    pub fn get_all_config_names(&self) -> Vec<String> {
+        self.config_name.keys().cloned().collect()
+    }
+
     pub fn get_point_group(&self, point_group_name: &str) -> Option<&Vec<String>> {
         match &self.point_groups {
             Some(point_groups) => point_groups.get(point_group_name),
@@ -265,6 +273,7 @@ pub fn parse_config(file_or_string: &str, from_file: bool) -> Result<ConfigFile,
             }
         }
     }
+    // TODO: merge the point group configs with the individual configs
 
     Ok(config_file)
 }
