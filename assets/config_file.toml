@@ -1,5 +1,5 @@
 [point_groups]
-head = ["LFHD", "RFHD", "LBHD", "RBHD"]
+head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
 shoulders = ["LSHO", "RSHO"]
 larm = ["LUPA1", "LUPA2", "LUPA3", "LFRA", "LWRB"]
 rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
@@ -19,16 +19,19 @@ visible_points = [
     ["head"], 
     ["larm"], ["rarm"], ["shoulders"], "C7",
 #    ["lhand"], ["rhand"],
-    ["hands"],
+#    ["hands"],
     ["lleg"], ["rleg"],
-    ["objects"], "BALL"
+    ["objects_re"], "BALL"
 ]
 
 joins = [
-    [["head"]],     # Unir todos los puntos de la cabeza entre si
+    [["head"]],     # Unir todos los puntos de la cabeza
     ["LUPA1", "LUPA2"], 
     ["LUPA3", "LFRA"], 
-    ["LFRA", "LWRB"]
+    [["objects_re"]],
+    [["lleg"]],
+    [["rleg"]]
+    # ["LFRA", "LWRB"]
 ]
 
 
