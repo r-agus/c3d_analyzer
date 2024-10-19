@@ -31,6 +31,7 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
+            .add_systems(Update, represent_joins)
             .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
@@ -104,8 +105,12 @@ pub struct GuiSidesEnabled {
 
 
 #[derive(Component)]
-/// This is the marker that represents the points in the C3D file
-pub struct Marker;      
+/// This is the marker that represents the points in the C3D file, with its label
+pub struct Marker(String);      
+
+#[derive(Component)]
+/// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
+pub struct Join(String, String);
 
 #[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
@@ -192,7 +197,7 @@ fn load_c3d(
                             },
                             ..default()
                         },
-                        Marker,
+                        Marker(label.clone()),
                     )).set_parent(points);
                 }
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
@@ -201,6 +206,31 @@ fn load_c3d(
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
+
+                if let Some(config) = config {
+                    let current_config = config.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
+                    current_config.get_joins().into_iter().for_each(|joins| {
+                        joins.into_iter().for_each(|join| {
+                            for i in 0..join.len() - 1 {
+                                println!("Join: {:?} - {:?}", join[i], join[i+1]);
+                                commands.spawn((
+                                PbrBundle {
+                                    mesh: meshes.add(
+                                        Cylinder::new(0.01, 1.0)
+                                    ),
+                                    material: materials.add(StandardMaterial {
+                                        base_color: Color::srgb_u8(0, 127, 0),
+                                        ..default()
+                                    }),
+                                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                                    visibility: Visibility::Visible,
+                                    ..default()
+                                }, Join(join[i].clone(), join[i+1].clone())
+                            ));
+                        }});
+                    });
+                }
+
                 println!("C3D loaded");
             }
             None => {
@@ -256,6 +286,40 @@ pub fn represent_points(
     }
 }
 
+pub fn represent_joins(
+    markers_query: Query<(&Marker, &Transform)>,
+    mut joins_query: Query<(&mut Transform, &Join), Without<Marker>>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+) {
+    let asset = c3d_assets.get(&c3d_state.handle);
+
+    match asset {
+        Some(_asset) => {
+            for (mut transform, join) in joins_query.iter_mut() {
+                let marker1 = get_marker_position(&join.0, &markers_query);
+                let marker2 = get_marker_position(&join.1, &markers_query);
+                match (marker1, marker2) {
+                    (Some(marker1), Some(marker2)) => {
+                        let position = (marker1 + marker2) / 2.0;
+                        let length = (marker1 - marker2).length();
+                        let direction = (marker1 - marker2).normalize();
+                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
+                        let scale = Vec3::new(0.5, length, 0.5);
+                        transform.translation = position;
+                        transform.rotation = rotation;
+                        transform.scale = scale;
+                    }
+                    _ => {
+                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1);
+                    }
+                }
+            }      
+        },
+        None => {}
+    }
+}
+
 fn change_frame_rate(
     state: Res<AppState>,
     mut time: ResMut<Time<Fixed>>,
@@ -266,4 +330,17 @@ fn change_frame_rate(
         }
         None => {}
     }
+}
+
+/// Obtain the position of a marker in current frame
+fn get_marker_position(
+    label: &str,
+    markers_query: &Query<(&Marker, &Transform)>,
+) -> Option<Vec3> {
+    for (marker, transform) in markers_query.iter() {
+        if marker.0 == label {
+            return Some(transform.translation);
+        } 
+    }
+    None
 }
