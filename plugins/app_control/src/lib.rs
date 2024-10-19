@@ -5,7 +5,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
-use config_plugin::{parse_config, ConfigFile};
+use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigState};
 
 pub struct ControlPlugin;
 
@@ -19,16 +19,19 @@ impl Plugin for ControlPlugin {
                         }
                 )))
             .add_plugins((C3dPlugin, DefaultPickingPlugins))
+            .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup)
-            .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload } ))
+            .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
+            .add_systems(First, file_drop::update_configc3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_config } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
             .add_systems(Update, load_c3d)
             .add_systems(Update, (represent_points)
-                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_none() || !state.render_at_fixed_frame_rate }))
             .add_systems(FixedUpdate, (represent_points)
-                .run_if(|state: Res<AppState>| -> bool { (state.file_loaded && state.play) || state.render_frame })
+                .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
+            .add_systems(Update, represent_joins)
             .add_systems(Update, change_frame_rate)
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
@@ -46,15 +49,17 @@ pub struct AppState {
     /// Path to the c3d file
     pub c3d_path: String,
     /// Path to the configuration file.
-    pub config_path: Option<String>,
+    pub config_path: String,
     /// Current configuration of the c3d file. Must be defined in the configuration file.
     pub current_config: Option<String>,
-    /// configuration of the c3d file. 
-    pub config: Option<ConfigFile>,
     /// Reload the c3d file. Used to reload the c3d file when the path changes.
-    pub reload: bool,
+    pub reload_c3d: bool,
+    /// Reload the configuration file. Used to reload the configuration file when the path changes.
+    pub reload_config: bool,
     /// File loaded. Used to know if the c3d file is loaded.
-    pub file_loaded: bool,
+    pub c3d_file_loaded: bool,
+    /// Configuration loaded. Used to know if the configuration file is loaded.
+    pub config_loaded: bool,
     /// Play the animation
     pub play: bool,
     /// Send a order to render the frame. Ignores the play state. Must set manually to true every frame, when render is done it is automatically false.
@@ -73,15 +78,17 @@ impl AppState {
             frame: 0,
             num_frames: 0,
             c3d_path: "".to_string(),
-            config_path: None,
-            reload: false,
-            file_loaded: false,
+            config_path: "".to_string(),
+            reload_c3d: false,
+            config_loaded: false,
+            c3d_file_loaded: false,
+            reload_config: false,
             play: false,
             render_frame: false,
             frame_rate: None,
             fixed_frame_rate: None,
             render_at_fixed_frame_rate: false,
-            config: None,
+            // config: None,
             current_config: None,
         }
     }
@@ -98,8 +105,12 @@ pub struct GuiSidesEnabled {
 
 
 #[derive(Component)]
-/// This is the marker that represents the points in the C3D file
-pub struct Marker;      
+/// This is the marker that represents the points in the C3D file, with its label
+pub struct Marker(String);      
+
+#[derive(Component)]
+/// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
+pub struct Join(String, String);
 
 #[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
@@ -112,10 +123,9 @@ fn setup(
     state.frame = 0;
     state.c3d_path =  "golpeo3.c3d".to_string();
     state.current_config = Some("config1".to_string());
-    state.config_path = Some("assets/config_file.toml".to_string());
-    state.config = parse_config(state.config_path.as_ref().unwrap()).ok();
-    state.reload = true;
-    state.file_loaded = true;
+    state.config_path = "config_file.toml".to_string();
+    state.reload_c3d = true;
+    state.c3d_file_loaded = true;
     state.play = true;
     state.fixed_frame_rate = None;
     state.render_at_fixed_frame_rate = false;
@@ -132,21 +142,32 @@ fn load_c3d(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
     mut app_state: ResMut<AppState>,
+    config_state: Res<ConfigState>,
+    config_assets: Res<Assets<ConfigC3dAsset>>,
 ) {
     if let Some(_) = events.read().last() {
-        let asset = c3d_assets.get(&c3d_state.handle);
+        let c3d_asset = c3d_assets.get(&c3d_state.handle);
         let points = 
             commands
                 .spawn((
                     PbrBundle {
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         ..default()
                     },
-                    C3dMarkers  // We need C3dMarkers to have certain properties, so use PbrBundle as a base.
+                    C3dMarkers  // This is a bunch of markers
                 ))
                 .id();
+        let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
-        match asset {
+        let config = match config_asset {
+            Some(asset) => parse_config(&asset.config, false).ok(),
+            None => {
+                println!("Config not loaded");
+                None
+            }
+        };
+        
+        match c3d_asset {
             Some(asset) => {
                 for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
@@ -164,14 +185,19 @@ fn load_c3d(
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
-                            visibility: if app_state.config.as_ref().unwrap().contains_point(current_config, label) {
-                                Visibility::Visible
-                            } else {
-                                Visibility::Hidden
+                            visibility: match &config {
+                                Some(config) => {
+                                    if config.contains_point_regex(current_config, label) {
+                                        Visibility::Visible
+                                    } else {
+                                        Visibility::Hidden
+                                    }
+                                }
+                                None => { Visibility::Visible }
                             },
                             ..default()
                         },
-                        Marker,
+                        Marker(label.clone()),
                     )).set_parent(points);
                 }
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
@@ -180,6 +206,31 @@ fn load_c3d(
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
+
+                if let Some(config) = config {
+                    let current_config = config.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
+                    current_config.get_joins().into_iter().for_each(|joins| {
+                        joins.into_iter().for_each(|join| {
+                            for i in 0..join.len() - 1 {
+                                println!("Join: {:?} - {:?}", join[i], join[i+1]);
+                                commands.spawn((
+                                PbrBundle {
+                                    mesh: meshes.add(
+                                        Cylinder::new(0.01, 1.0)
+                                    ),
+                                    material: materials.add(StandardMaterial {
+                                        base_color: Color::srgb_u8(0, 127, 0),
+                                        ..default()
+                                    }),
+                                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                                    visibility: Visibility::Visible,
+                                    ..default()
+                                }, Join(join[i].clone(), join[i+1].clone())
+                            ));
+                        }});
+                    });
+                }
+
                 println!("C3D loaded");
             }
             None => {
@@ -235,6 +286,40 @@ pub fn represent_points(
     }
 }
 
+pub fn represent_joins(
+    markers_query: Query<(&Marker, &Transform)>,
+    mut joins_query: Query<(&mut Transform, &Join), Without<Marker>>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+) {
+    let asset = c3d_assets.get(&c3d_state.handle);
+
+    match asset {
+        Some(_asset) => {
+            for (mut transform, join) in joins_query.iter_mut() {
+                let marker1 = get_marker_position(&join.0, &markers_query);
+                let marker2 = get_marker_position(&join.1, &markers_query);
+                match (marker1, marker2) {
+                    (Some(marker1), Some(marker2)) => {
+                        let position = (marker1 + marker2) / 2.0;
+                        let length = (marker1 - marker2).length();
+                        let direction = (marker1 - marker2).normalize();
+                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
+                        let scale = Vec3::new(0.5, length, 0.5);
+                        transform.translation = position;
+                        transform.rotation = rotation;
+                        transform.scale = scale;
+                    }
+                    _ => {
+                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1);
+                    }
+                }
+            }      
+        },
+        None => {}
+    }
+}
+
 fn change_frame_rate(
     state: Res<AppState>,
     mut time: ResMut<Time<Fixed>>,
@@ -245,4 +330,17 @@ fn change_frame_rate(
         }
         None => {}
     }
+}
+
+/// Obtain the position of a marker in current frame
+fn get_marker_position(
+    label: &str,
+    markers_query: &Query<(&Marker, &Transform)>,
+) -> Option<Vec3> {
+    for (marker, transform) in markers_query.iter() {
+        if marker.0 == label {
+            return Some(transform.translation);
+        } 
+    }
+    None
 }

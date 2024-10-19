@@ -13,6 +13,7 @@ joins = [
     [["head"]],
     ["marker2", "marker3", "marker4"]
 ]
+# vector = [CM, Vector(3 puntos, 9 componentes), FactorDeEscala]
 point_color = "red"
 join_color = "green"
 line_thickness = 2.0
