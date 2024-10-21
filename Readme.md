@@ -32,7 +32,7 @@ Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones 
 # Objetivos del proyecto
 
 - [x] Leer ficheros C3D
-- [ ] Leer ficheros de configuración
+- [x] Leer ficheros de configuración
 - [ ] Editar ficheros C3D
 - [ ] Editar ficheros de configuración
 - [x] Representar el fichero C3D
