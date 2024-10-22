@@ -155,6 +155,7 @@ impl ConfigFile {
     }
 
     /// Searches for the color of a point in the config file. Returns the point_color config if exists, if not, the default config color, and if it is not set, None.
+    /// If a point is in more than one point group, the first one found will be used. The order of the point groups is not guaranteed.
     pub fn get_point_color(&self, label: &str, config: &str) -> Option<Vec<u8>> {
         // First check if the point is in a point group
         if let Some(point_groups) = &self.point_groups {
@@ -166,7 +167,25 @@ impl ConfigFile {
                 }
             }
         }
+        // If not, check the individual config
         self.config_name.get(config).and_then(|c| c.point_color.clone()).or_else(|| None)        
+    }
+
+    /// Searches for the size of a point in the config file. Returns the point_color config if exists, if not, the default config color, and if it is not set, None.
+    /// If a point is in more than one point group, the first one found will be used. The order of the point groups is not guaranteed.
+    pub fn get_point_size (&self, label: &str, config: &str) -> Option<f64> {
+        // First check if the point is in a point group
+        if let Some(point_groups) = &self.point_groups {
+            for (group_name, points) in point_groups.iter() {
+                if points.contains(&label.to_string()) {
+                    if let Some(point_group_config) = self.point_groups_config.as_ref().and_then(|c| c.get(group_name)) {
+                        return point_group_config.point_size;
+                    }
+                }
+            }
+        }
+        // If not, check the individual config
+        self.config_name.get(config).and_then(|c| c.point_size).or_else(|| None)
     }
 
     pub fn add_point_group(&mut self, point_group_name: String, points: Vec<String>) {
