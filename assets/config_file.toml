@@ -22,7 +22,7 @@ rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 [config1]
 visible_points = [
     ["head"], 
-    ["larm"], ["rarm"], ["shoulders"], "C7",
+    ["larm"], ["rarm"], ["shoulders"], #"C7",
     ["lleg"], ["rleg"],
     ["objects_re"], "BALL",
     "LWRB"
@@ -42,6 +42,6 @@ joins = [
 
 
 [solo_objetos]
-visible_points = [["objects_re"], "BALL"]
+visible_points = [["objects"], "BALL"]
 
 joins = []
