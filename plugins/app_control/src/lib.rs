@@ -32,7 +32,7 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, represent_joins)
-            .add_systems(Update, change_frame_rate)
+            .add_systems(Update, (change_frame_rate, change_config))
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -56,6 +56,8 @@ pub struct AppState {
     pub reload_c3d: bool,
     /// Reload the configuration file. Used to reload the configuration file when the path changes.
     pub reload_config: bool,
+    /// Change the configuration. Used to change the configuration of the c3d file.
+    pub change_config: bool,
     /// File loaded. Used to know if the c3d file is loaded.
     pub c3d_file_loaded: bool,
     /// Configuration loaded. Used to know if the configuration file is loaded.
@@ -82,6 +84,7 @@ impl AppState {
             reload_c3d: false,
             config_loaded: false,
             c3d_file_loaded: false,
+            change_config: false,
             reload_config: false,
             play: false,
             render_frame: false,
@@ -160,7 +163,7 @@ fn load_c3d(
         let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
         let config = match config_asset {
-            Some(asset) => parse_config(&asset.config, false).ok(),
+            Some(asset) => parse_config(&asset.config_str, false).ok(),
             None => {
                 println!("Config not loaded");
                 None
@@ -343,4 +346,29 @@ fn get_marker_position(
         } 
     }
     None
+}
+
+/// Change the configuration of the c3d file. This can be used to change the representation of the c3d file.
+fn change_config(
+    mut state: ResMut<AppState>,
+    mut commands: Commands,
+    query_markers: Query<(Entity, &Marker)>,
+    query_joins: Query<(Entity, &Join)>,
+    mut ev_loaded: EventWriter<C3dLoadedEvent>,
+) {
+    if !state.change_config{
+        return;
+    }
+    state.change_config = false;
+    
+    // First we need to despawn all the markers and joins
+    for (entity, _) in query_markers.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    for (entity, _) in query_joins.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    // Then we load the new configuration. Just need to call load_c3d again.
+    ev_loaded.send(C3dLoadedEvent);
 }
