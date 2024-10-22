@@ -163,11 +163,7 @@ fn load_c3d(
         let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
         let config = match config_asset {
-            Some(asset) => {
-                let res = parse_config(&asset.config_str, false).ok();
-                println!("Confif file {:?}", res);
-                res
-            },
+            Some(asset) => parse_config(&asset.config_str, false).ok(),
             None => {
                 println!("Config not loaded");
                 None
