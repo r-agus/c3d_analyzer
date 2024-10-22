@@ -32,7 +32,7 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, represent_joins)
-            .add_systems(Update, change_frame_rate)
+            .add_systems(Update, (change_frame_rate, change_config))
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -56,6 +56,8 @@ pub struct AppState {
     pub reload_c3d: bool,
     /// Reload the configuration file. Used to reload the configuration file when the path changes.
     pub reload_config: bool,
+    /// Change the configuration. Used to change the configuration of the c3d file.
+    pub change_config: bool,
     /// File loaded. Used to know if the c3d file is loaded.
     pub c3d_file_loaded: bool,
     /// Configuration loaded. Used to know if the configuration file is loaded.
@@ -82,6 +84,7 @@ impl AppState {
             reload_c3d: false,
             config_loaded: false,
             c3d_file_loaded: false,
+            change_config: false,
             reload_config: false,
             play: false,
             render_frame: false,
@@ -160,7 +163,7 @@ fn load_c3d(
         let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
         let config = match config_asset {
-            Some(asset) => parse_config(&asset.config, false).ok(),
+            Some(asset) => parse_config(&asset.config_str, false).ok(),
             None => {
                 println!("Config not loaded");
                 None
@@ -178,10 +181,37 @@ fn load_c3d(
                     commands.spawn((
                         PbrBundle {
                             mesh: meshes.add(
-                                Sphere::new(0.014).mesh(),
+                                // Obtain radius from get_point_size
+                                Sphere::new(match &config {
+                                    Some(config) => {
+                                        if let Some(size) = config.get_point_size(label, current_config) {
+                                            0.014 * size as f32
+                                        } else {
+                                            0.014
+                                        }
+                                    }
+                                    None => { 0.014 }
+                                })
+                                .mesh(),
                             ),
                             material: materials.add(StandardMaterial {
-                                base_color: Color::srgb_u8(0, 0, 127),
+                                // Obtain color from get_point_color
+                                base_color: match &config {
+                                    Some(config) => {
+                                        if let Some(color) = config.get_point_color(label, current_config){
+                                            if color.len() == 3 {
+                                                Color::srgb_u8(color[0], color[1], color[2])
+                                            } else if color.len() == 4 {
+                                                Color::srgba_u8(color[0], color[1], color[2], color[3])
+                                            } else {
+                                                Color::srgb(0.0, 0.0, 1.0)
+                                            }
+                                        } else {
+                                            Color::srgb(0.0, 0.0, 1.0)
+                                        }
+                                    }
+                                    None => { Color::srgb(0.0, 0.0, 1.0) }
+                                },
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),
@@ -200,6 +230,7 @@ fn load_c3d(
                         Marker(label.clone()),
                     )).set_parent(points);
                 }
+                let current_config = app_state.current_config.clone().unwrap_or_default();
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
                 println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
                 
@@ -207,19 +238,28 @@ fn load_c3d(
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
 
-                if let Some(config) = config {
-                    let current_config = config.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
-                    current_config.get_joins().into_iter().for_each(|joins| {
+                if let Some(config_file) = config {
+                    let config = config_file.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
+                    config.get_joins().into_iter().for_each(|joins| {
                         joins.into_iter().for_each(|join| {
                             for i in 0..join.len() - 1 {
-                                println!("Join: {:?} - {:?}", join[i], join[i+1]);
+                                let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
+                                let line_color = config_file.get_join_color(&join[i], &join[i+1], &current_config).unwrap_or(vec![0, 255, 0]);
                                 commands.spawn((
                                 PbrBundle {
                                     mesh: meshes.add(
-                                        Cylinder::new(0.01, 1.0)
+                                        Cylinder::new(
+                                                    if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
+                                            1.0)
                                     ),
                                     material: materials.add(StandardMaterial {
-                                        base_color: Color::srgb_u8(0, 127, 0),
+                                        base_color: if line_color.len() == 3 {
+                                                        Color::srgb_u8(line_color[0], line_color[1],line_color[2])
+                                                    } else if line_color.len() == 4 {
+                                                        Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
+                                                    } else{
+                                                        Color::srgb_u8(0, 127, 0)
+                                                    },
                                         ..default()
                                     }),
                                     transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
@@ -275,12 +315,12 @@ pub fn represent_points(
                         }
                         Err(_) => {}
                     }
-                }    
-                state.frame += 1;
-                if state.frame >= num_frames {
-                    state.frame = 0;
-                }        
+                }         
             }
+            state.frame += 1;
+            if state.frame >= num_frames {
+                state.frame = 0;
+            }   
         }
         None => {}
     }
@@ -343,4 +383,29 @@ fn get_marker_position(
         } 
     }
     None
+}
+
+/// Change the configuration of the c3d file. This can be used to change the representation of the c3d file.
+fn change_config(
+    mut state: ResMut<AppState>,
+    mut commands: Commands,
+    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
+    query_joins: Query<(Entity, &Join)>,
+    mut ev_loaded: EventWriter<C3dLoadedEvent>,
+) {
+    if !state.change_config{
+        return;
+    }
+    state.change_config = false;
+    
+    // First we need to despawn all the markers (and its parent, C3dMarker), joins
+    for (entity, _) in query_c3d_markers.iter() {
+        commands.entity(entity).despawn_recursive(); // Also despawns the children (markers)
+    }
+    for (entity, _) in query_joins.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    // Then we load the new configuration. Just need to call load_c3d again.
+    ev_loaded.send(C3dLoadedEvent);
 }

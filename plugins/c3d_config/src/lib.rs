@@ -34,7 +34,10 @@ impl Plugin for C3dConfigPlugin {
 /// Asset that represents a text file
 #[derive(Asset, TypePath)]
 pub struct ConfigC3dAsset {
-    pub config: String,
+    /// Literal text content of the file. Left for backwards compatibility.
+    pub config_str: String,
+    /// Configuration of the C3D file
+    pub config: ConfigFile,
 }
 
 /// Asset loader for text files
@@ -57,7 +60,11 @@ impl AssetLoader for ConfigAssetLoader {
             let mut bytes = Vec::new();
             let _res = reader.read_to_end(&mut bytes).await;
             let content = String::from_utf8_lossy(&bytes).to_string();
-            Ok(ConfigC3dAsset { config: content })
+            let config_file = parse_config(&content, false).unwrap();
+            Ok(ConfigC3dAsset { 
+                config_str: content, 
+                config: config_file,
+            })
         })
     }
 
@@ -99,7 +106,7 @@ fn load_config_system(
     if !*loaded {
         let handle = asset_server.load::<ConfigC3dAsset>(config_state.path.clone());
         if let Some(config) = text_assets.get(&handle) {
-            println!("Contenido del archivo TOML: {}", config.config);
+            println!("Contenido del archivo TOML: {}", config.config_str);
         }
         *loaded = true;
     }

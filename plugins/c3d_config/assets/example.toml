@@ -14,8 +14,8 @@ joins = [
     ["marker2", "marker3", "marker4"]
 ]
 # vector = [CM, Vector(3 puntos, 9 componentes), FactorDeEscala]
-point_color = "red"
-join_color = "green"
+point_color = [255, 0, 0]
+join_color = [0, 255, 0]
 line_thickness = 2.0
 point_size = 1.5
 

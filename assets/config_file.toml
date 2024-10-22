@@ -1,41 +1,70 @@
 [point_groups]
-head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
-shoulders = ["LSHO", "RSHO"]
-larm = ["LUPA1", "LUPA2", "LUPA3", "LFRA", "LWRB"]
-rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
+    head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
+    shoulders = ["LSHO", "RSHO"]
+    rshoulders1 = ["RSHO1", "RSHO2", "RSHO3"]
+    lshoulders1 = ["LSHO1", "LSHO2", "LSHO3"]
+    larm = ["LUPA1", "LUPA2", "LFRA", "LWRB"]
+    rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
 
-lhand = ["LWRB", "LFIN"]
-rhand = ["RWRB", "RFIN"]
-hands = ["(L|R)WRB", ".FIN"]   # Utilizamos expresiones regulares para encontrar patrones
+    lhand = ["LWRB", "LFIN"]
+    rhand = ["RWRB", "RFIN"]
+    hands = ["(L|R)WRB", ".FIN"]   # Utilizamos expresiones regulares para encontrar patrones
 
-objects = ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"]
-objects_re = ["OBJ[1-Z]"]
+    objects = ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"]
+    objects_re = ["OBJ[1-Z]"]
 
-lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
-rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
+    lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
+    rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
+    ball = ["BALL"]
+
+[head.config]
+    point_color = [255, 0, 0]
+    point_size = 0.5 # Mitad del tamaño original
+
+[shoulders.config]
+    point_color = [100, 100, 255]
+    point_size = 2.0 # Doble del tamaño original
+
+[objects.config]
+    point_color = [100, 100, 100]
+    line_thickness = 1.5
+    join_color = [100, 100, 100]
+
+[ball.config]
+    point_color = [255, 255, 255]
+    point_size = 2.0
 
 [config1]
-visible_points = [
-    ["head"], 
-    ["larm"], ["rarm"], ["shoulders"], "C7",
-#    ["lhand"], ["rhand"],
-#    ["hands"],
-    ["lleg"], ["rleg"],
-    ["objects_re"], "BALL"
-]
+    visible_points = [
+        ["head"], 
+        ["larm"], ["rarm"], ["shoulders"], #"C7",
+        ["lleg"], ["rleg"],
+        ["objects_re"], "BALL",
+        "LWRB"
+    ]
 
-joins = [
-    [["head"]],     # Unir todos los puntos de la cabeza
-    ["LUPA1", "LUPA2"], 
-    ["LUPA3", "LFRA"], 
-    [["objects_re"]],
-    [["lleg"]],
-    [["rleg"]]
-    # ["LFRA", "LWRB"]
+    joins = [
+        [["head"]],     # Unir todos los puntos de la cabeza
+        ["LUPA1", "LUPA2", "LFRA"], # Error con LWRB
+        [["rarm"]],
+        ["CLAV", "C7", "T10", "STRN", "CLAV"],
+        ["ThoraxS", "ThoraxI", "AbdI"],
+        ["RSHO", "LSHO"],
+        ["LASI", "RASI", "RPSI", "LPSI", "LASI"],
+        [["lleg"]],
+        [["rleg"]],
+        [["objects"]]
 ]
 
 
 [solo_objetos]
-visible_points = [["objects_re"], "BALL"]
+    visible_points = [["objects"], "BALL"]
 
-joins = []
+    joins = [
+        [["objects"]]
+    ]
+
+    point_color = [255, 0, 0]
+    join_color = [255, 195, 0]
+    line_thickness = 2.0
+    point_size = 1.5
