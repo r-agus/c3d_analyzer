@@ -181,7 +181,18 @@ fn load_c3d(
                     commands.spawn((
                         PbrBundle {
                             mesh: meshes.add(
-                                Sphere::new(0.014).mesh(),
+                                // Obtain radius from get_point_size
+                                Sphere::new(match &config {
+                                    Some(config) => {
+                                        if let Some(size) = config.get_point_size(label, current_config) {
+                                            0.014 * size as f32
+                                        } else {
+                                            0.014
+                                        }
+                                    }
+                                    None => { 0.014 }
+                                })
+                                .mesh(),
                             ),
                             material: materials.add(StandardMaterial {
                                 // Obtain color from get_point_color
