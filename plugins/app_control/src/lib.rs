@@ -184,7 +184,17 @@ fn load_c3d(
                                 Sphere::new(0.014).mesh(),
                             ),
                             material: materials.add(StandardMaterial {
-                                base_color: Color::srgb_u8(0, 0, 127),
+                                // Obtain color from get_point_color
+                                base_color: match &config {
+                                    Some(config) => {
+                                        if let Some(color) = config.get_point_color(label, current_config){
+                                            Color::srgb(color[0] as f32 / 255.0, color[1] as f32 / 255.0, color[2] as f32 / 255.0)
+                                        } else {
+                                            Color::srgb(0.0, 0.0, 1.0)
+                                        }
+                                    }
+                                    None => { Color::srgb(0.0, 0.0, 1.0) }
+                                },
                                 ..default()
                             }),
                             transform: Transform::from_matrix(matrix),

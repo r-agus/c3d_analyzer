@@ -45,4 +45,6 @@ joins = [
 [solo_objetos]
 visible_points = [["objects"], "BALL"]
 
-joins = []
+joins = [
+    [["objects"]]
+]

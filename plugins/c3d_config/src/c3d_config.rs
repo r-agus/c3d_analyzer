@@ -154,11 +154,19 @@ impl ConfigFile {
         }
     }
 
-    pub fn get_point_group_config(&self, point_group_name: &str) -> Option<&PointGroupConfig> {
-        match &self.point_groups_config {
-            Some(point_groups_config) => point_groups_config.get(point_group_name),
-            None => None,
+    /// Searches for the color of a point in the config file. Returns the point_color config if exists, if not, the default config color, and if it is not set, None.
+    pub fn get_point_color(&self, label: &str, config: &str) -> Option<Vec<u8>> {
+        // First check if the point is in a point group
+        if let Some(point_groups) = &self.point_groups {
+            for (group_name, points) in point_groups.iter() {
+                if points.contains(&label.to_string()) {
+                    if let Some(point_group_config) = self.point_groups_config.as_ref().and_then(|c| c.get(group_name)) {
+                        return point_group_config.point_color.clone();
+                    }
+                }
+            }
         }
+        self.config_name.get(config).and_then(|c| c.point_color.clone()).or_else(|| None)        
     }
 
     pub fn add_point_group(&mut self, point_group_name: String, points: Vec<String>) {
@@ -221,7 +229,6 @@ pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Confi
     }
 }
 
-
 fn read_config(file_or_string: &str, from_file: bool) -> Result<HashMap<String, Value>, Box<dyn std::error::Error>> {
     let content = if from_file {fs::read_to_string(file_or_string)?} else {file_or_string.to_string()};
     let config: HashMap<String, Value> = toml::from_str(&content)?;
@@ -274,7 +281,20 @@ pub fn parse_config(file_or_string: &str, from_file: bool) -> Result<ConfigFile,
             }
         }
     }
-    // TODO: merge the point group configs with the individual configs
+
+    // Now merge the point group configs with the individual configs
+    for (group_name, group_config) in config_file.point_groups_config.iter().flatten() {
+        if let Some(point_groups) = &config_file.point_groups {
+            if let Some(points) = point_groups.get(group_name) {
+                for point in points {
+                    if let Some(config) = config_file.config_name.get_mut(point) {
+                        *config = merge_configs(config, group_config);
+                    }
+                }
+            }
+        }
+    }
+
 
     Ok(config_file)
 }
