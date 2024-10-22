@@ -11,7 +11,7 @@ pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
     point_color: Option<Vec<u8>>,
-    join_color: Option<String>,
+    join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
     point_size: Option<f64>,
 }
@@ -97,7 +97,7 @@ impl Config {
 #[derive(Deserialize, Debug)]
 pub struct PointGroupConfig {
     point_color: Option<Vec<u8>>,
-    join_color: Option<String>,
+    join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
     point_size: Option<f64>,
 }
@@ -188,6 +188,40 @@ impl ConfigFile {
         self.config_name.get(config).and_then(|c| c.point_size).or_else(|| None)
     }
 
+    /// Searches for the thickness of a join between two points in the config file. Returns the line_thickness config if exists, if not, the default config color, and if it is not set, None.
+    /// The order between the two points does not matter.
+    pub fn get_line_thickness(&self, point1: &str, point2: &str, config: &str) -> Option<f64> {
+        // First check if the points are in a point group
+        if let Some(point_groups) = &self.point_groups {
+            for (group_name, points) in point_groups.iter() {
+                if points.contains(&point1.to_string()) && points.contains(&point2.to_string()) {
+                    if let Some(point_group_config) = self.point_groups_config.as_ref().and_then(|c| c.get(group_name)) {
+                        return point_group_config.line_thickness;
+                    }
+                }
+            }
+        }
+        // If not, check the individual config
+        self.config_name.get(config).and_then(|c| c.line_thickness).or_else(|| None)
+    }
+
+    /// Searches for the color of a join between two points in the config file. Returns the join_color config if exists, if not, the default config color, and if it is not set, None.
+    /// The order between the two points does not matter.
+    pub fn get_join_color(&self, point1: &str, point2: &str, config: &str) -> Option<Vec<u8>> {
+        // First check if the points are in a point group
+        if let Some(point_groups) = &self.point_groups {
+            for (group_name, points) in point_groups.iter() {
+                if points.contains(&point1.to_string()) && points.contains(&point2.to_string()) {
+                    if let Some(point_group_config) = self.point_groups_config.as_ref().and_then(|c| c.get(group_name)) {
+                        return point_group_config.join_color.clone();
+                    }
+                }
+            }
+        }
+        // If not, check the individual config
+        self.config_name.get(config).and_then(|c| c.join_color.clone()).or_else(|| None)
+    }
+
     pub fn add_point_group(&mut self, point_group_name: String, points: Vec<String>) {
         if let Some(point_groups) = &mut self.point_groups {
             point_groups.insert(point_group_name, points);
@@ -255,7 +289,7 @@ fn read_config(file_or_string: &str, from_file: bool) -> Result<HashMap<String, 
 }
 
 pub fn parse_config(file_or_string: &str, from_file: bool) -> Result<ConfigFile, String> {
-    let config = read_config(file_or_string, from_file).unwrap();
+    let config = read_config(file_or_string, from_file).unwrap_or(HashMap::new());
     let mut config_file = ConfigFile::default();
 
     // Caution: The order of the keys in the config file is not guaranteed, because it is a hashmap.
@@ -382,7 +416,15 @@ fn parse_individual_config(
             None
         }
     });
-    config.join_color = table.get("join_color").and_then(|v| v.as_str().map(String::from));
+    config.join_color = table.get("join_color").and_then(|v| v.as_array()).and_then(|v| {
+        if v.len() == 3 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8])
+        } else if v.len() == 4 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8, v[3].as_integer().unwrap() as u8])
+        } else {
+            None
+        }
+    });
     config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());
     config.point_size = table.get("point_size").and_then(|v| v.as_float());
 
@@ -403,7 +445,15 @@ fn parse_point_group_config(table: Map<String, Value>) -> Result<PointGroupConfi
         }
     });
     group_config.point_size = table.get("point_size").and_then(|v| v.as_float());
-    group_config.join_color = table.get("join_color").and_then(|v| v.as_str().map(String::from));
+    group_config.join_color = table.get("join_color").and_then(|v| v.as_array()).and_then(|v| {
+        if v.len() == 3 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8])
+        } else if v.len() == 4 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8, v[3].as_integer().unwrap() as u8])
+        } else {
+            None
+        }
+    });
     group_config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());
     println!("{:?}", group_config);
     Ok(group_config)
