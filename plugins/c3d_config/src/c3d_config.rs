@@ -115,6 +115,7 @@ impl PointGroupConfig {
 
 #[derive(Asset, TypePath, Deserialize, Debug)]
 #[type_path = "conf_plugin::c3d_config::ConfigFile"]
+/// This contains the configuration of the C3D file
 pub struct ConfigFile {
     config_name: HashMap<String, Config>,
     point_groups: Option<HashMap<String, Vec<String>>>,
