@@ -10,7 +10,7 @@ use toml::{Value, map::Map};
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
-    point_color: Option<String>,
+    point_color: Option<Vec<u8>>,
     join_color: Option<String>,
     line_thickness: Option<f64>,
     point_size: Option<f64>,
@@ -96,7 +96,7 @@ impl Config {
 
 #[derive(Deserialize, Debug)]
 pub struct PointGroupConfig {
-    point_color: Option<String>,
+    point_color: Option<Vec<u8>>,
     join_color: Option<String>,
     line_thickness: Option<f64>,
     point_size: Option<f64>,
@@ -334,7 +334,15 @@ fn parse_individual_config(
         }
     }
 
-    config.point_color = table.get("point_color").and_then(|v| v.as_str().map(String::from));
+    config.point_color = table.get("point_color").and_then(|v| v.as_array()).and_then(|v| {
+        if v.len() == 3 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8])
+        } else if v.len() == 4 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8, v[3].as_integer().unwrap() as u8])
+        } else {
+            None
+        }
+    });
     config.join_color = table.get("join_color").and_then(|v| v.as_str().map(String::from));
     config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());
     config.point_size = table.get("point_size").and_then(|v| v.as_float());
@@ -346,7 +354,15 @@ fn parse_individual_config(
 fn parse_point_group_config(table: Map<String, Value>) -> Result<PointGroupConfig, String> {
     let mut group_config = PointGroupConfig::default();
 
-    group_config.point_color = table.get("point_color").and_then(|v| v.as_str().map(String::from));
+    group_config.point_color = table.get("point_color").and_then(|v| v.as_array()).and_then(|v| {
+        if v.len() == 3 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8])
+        } else if v.len() == 4 {
+            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8, v[3].as_integer().unwrap() as u8])
+        } else {
+            None
+        }
+    });
     group_config.point_size = table.get("point_size").and_then(|v| v.as_float());
     group_config.join_color = table.get("join_color").and_then(|v| v.as_str().map(String::from));
     group_config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());

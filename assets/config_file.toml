@@ -17,7 +17,8 @@ lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
 rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 
 [head.config]
-
+point_color = [255, 0, 0]
+point_size = 5.0
 
 [config1]
 visible_points = [
