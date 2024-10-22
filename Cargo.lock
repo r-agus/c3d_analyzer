@@ -3539,6 +3539,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "control_plugin",
  "gui_plugin",
+ "wasm-bindgen",
 ]
 
 [[package]]
