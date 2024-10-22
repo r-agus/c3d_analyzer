@@ -278,12 +278,12 @@ pub fn represent_points(
                         }
                         Err(_) => {}
                     }
-                }    
-                state.frame += 1;
-                if state.frame >= num_frames {
-                    state.frame = 0;
-                }        
+                }         
             }
+            state.frame += 1;
+            if state.frame >= num_frames {
+                state.frame = 0;
+            }   
         }
         None => {}
     }
@@ -352,6 +352,7 @@ fn get_marker_position(
 fn change_config(
     mut state: ResMut<AppState>,
     mut commands: Commands,
+    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
     query_markers: Query<(Entity, &Marker)>,
     query_joins: Query<(Entity, &Join)>,
     mut ev_loaded: EventWriter<C3dLoadedEvent>,
@@ -361,7 +362,10 @@ fn change_config(
     }
     state.change_config = false;
     
-    // First we need to despawn all the markers and joins
+    // First we need to despawn all the markers (and its parent, C3dMarker), joins
+    for (entity, _) in query_c3d_markers.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
     for (entity, _) in query_markers.iter() {
         commands.entity(entity).despawn_recursive();
     }
