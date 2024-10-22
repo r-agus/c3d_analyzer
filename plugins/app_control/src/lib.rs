@@ -163,7 +163,11 @@ fn load_c3d(
         let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
         let config = match config_asset {
-            Some(asset) => parse_config(&asset.config_str, false).ok(),
+            Some(asset) => {
+                let res = parse_config(&asset.config_str, false).ok();
+                println!("Confif file {:?}", res);
+                res
+            },
             None => {
                 println!("Config not loaded");
                 None
@@ -353,7 +357,6 @@ fn change_config(
     mut state: ResMut<AppState>,
     mut commands: Commands,
     query_c3d_markers: Query<(Entity, &C3dMarkers)>,
-    query_markers: Query<(Entity, &Marker)>,
     query_joins: Query<(Entity, &Join)>,
     mut ev_loaded: EventWriter<C3dLoadedEvent>,
 ) {
@@ -364,10 +367,7 @@ fn change_config(
     
     // First we need to despawn all the markers (and its parent, C3dMarker), joins
     for (entity, _) in query_c3d_markers.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-    for (entity, _) in query_markers.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn_recursive(); // Also despawns the children (markers)
     }
     for (entity, _) in query_joins.iter() {
         commands.entity(entity).despawn_recursive();
