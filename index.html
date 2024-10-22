@@ -1,19 +1,25 @@
 <!doctype html>
 <html lang="en">
 
-<head></head>
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@900&display=swap" rel="stylesheet">
+</head>
   <meta charset="utf-8">
   <title>Swing3D</title>
   <link rel="stylesheet" href="styles.css">
 
   <body style="margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh;">
-    <div class="bar">
-      <div class="ball"></div>
+    <div class="title">
+      <p style="font-family: 'Poppins', sans-serif; font-size: 75px; font-weight: 900; color: white;">
+        Swing3D
+      </p>
+      <div class="bar">
+        <div class="ball"></div>
+      </div>
     </div>
-
   <script type="module">
     export function notify_start() {
-      document.querySelector('.bar').remove();
+      document.querySelector('.title').remove();
     };
     window.notify_start = notify_start;
   </script>
