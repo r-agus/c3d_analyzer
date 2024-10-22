@@ -18,7 +18,11 @@ rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
 
 [head.config]
 point_color = [255, 0, 0]
-point_size = 5.0
+point_size = 0.5 # Mitad del tamaño original
+
+[shoulders.config]
+point_color = [100, 100, 255]
+point_size = 2.0 # Doble del tamaño original
 
 [config1]
 visible_points = [
@@ -48,3 +52,8 @@ visible_points = [["objects"], "BALL"]
 joins = [
     [["objects"]]
 ]
+
+point_color = [255, 0, 0]
+join_color = [0, 255, 0]
+line_thickness = 2.0
+point_size = 1.5
