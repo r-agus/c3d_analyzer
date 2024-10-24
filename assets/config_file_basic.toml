@@ -1,0 +1,49 @@
+[point_groups]
+    head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
+    shoulders = ["LSHO", "RSHO"]
+    rshoulders1 = ["RSHO1", "RSHO2", "RSHO3"]
+    lshoulders1 = ["LSHO1", "LSHO2", "LSHO3"]
+    larm = ["LUPA1", "LUPA2", "LFRA", "LWRB"]
+    rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
+
+    lhand = ["LWRB", "LFIN"]
+    rhand = ["RWRB", "RFIN"]
+    hands = ["(L|R)WRB", ".FIN"]   # Utilizamos expresiones regulares para encontrar patrones
+
+    objects = ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"]
+    objects_re = ["OBJ[1-Z]"]
+
+    lleg = ["LTHI", "LKNE", "LTIB", "LANK", "LHEE", "LTOE"]
+    rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
+    ball = ["BALL"]
+
+[config1]
+    visible_points = [
+        ["head"], 
+        ["larm"], ["rarm"], ["shoulders"], #"C7",
+        ["lleg"], ["rleg"],
+        ["objects_re"], "BALL",
+        "LWRB"
+    ]
+
+[config2]
+    visible_points = [
+        ["head"], 
+        ["larm"], ["rarm"], ["shoulders"], #"C7",
+        ["lleg"], ["rleg"],
+        ["objects_re"], "BALL",
+        "LWRB"
+    ]
+
+    joins = [
+        [["head"]],     # Unir todos los puntos de la cabeza
+        ["LUPA1", "LUPA2", "LFRA"], # Error con LWRB
+        [["rarm"]],
+        ["CLAV", "C7", "T10", "STRN", "CLAV"],
+        ["ThoraxS", "ThoraxI", "AbdI"],
+        ["RSHO", "LSHO"],
+        ["LASI", "RASI", "RPSI", "LPSI", "LASI"],
+        [["lleg"]],
+        [["rleg"]],
+        [["objects"]]
+]
