@@ -61,6 +61,6 @@ extern "C" {
 }
 #[cfg(target_family = "wasm")]
 pub fn start_program() {
-    // Llamar a la función de JavaScript para indicar el inicio
+    // Llamar a la función de JavaScript para indicar el inicio (eliminar pantalla de carga)
     notify_start();
 }
