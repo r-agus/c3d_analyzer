@@ -110,7 +110,7 @@ pub struct GuiSidesEnabled {
 
 #[derive(Component)]
 /// This is the marker that represents the points in the C3D file, with its label
-pub struct Marker(String);      
+pub struct Marker(pub String);
 
 #[derive(Component)]
 /// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
@@ -135,7 +135,8 @@ fn setup(
     state.render_at_fixed_frame_rate = false;
 
     gui.timeline = true;
-    
+    gui.graphs = true;
+
     println!("Control PluginSetup done");
 }
 
