@@ -38,11 +38,13 @@ fn _describe_graphs(
 
 fn update_graphs(
     state: Res<AppState>,
-    marker: Query<&Marker>
+    markers_query: Query<(&Marker, &Transform)>,
 ) {
-    gauge!("Test Gauge").set(state.frame as f64);
-    for m in marker.iter() {
-        gauge!(m.0.clone()).set(state.frame as f64);
+    for (m,t) in markers_query.iter() {
+        let pos = t.translation;
+        gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config (we can define namespaces as 'config::marker_name')
+        gauge!(m.0.clone() + "::y").set(pos[1]);
+        gauge!(m.0.clone() + "::z").set(pos[2]);
     }
 }
 
