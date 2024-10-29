@@ -1,7 +1,7 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 
-use bevy_egui::{egui::{self}, EguiContext, EguiPlugin};
-use bevy_inspector_egui::{bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin};
+use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
+use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
 use control_plugin::*;
 
@@ -10,84 +10,61 @@ pub struct GUIPlugin;
 impl Plugin for GUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-            .add_plugins(DefaultInspectorConfigPlugin)
+            .add_plugins(RegistryPlugin::default())
+            .add_plugins(DashboardPlugin)
+            .add_systems(Startup, create_dashboard)
+            .add_systems(Update, update_graphs)
             .add_systems(Update,gui);
     }
 }
 
-fn gui(world: &mut World, 
-        mut selected_entities: Local<SelectedEntities>,
+fn create_dashboard(
+    mut commands: Commands,
+) {
+    commands.spawn(DashboardWindow::new("Graphs"));
+}
+
+fn _describe_graphs(
+    // markers: Query<(&C3dMarkers, &Children)>,
+    marker: Query<&Marker>
+){
+    println!("Describing graphs");
+    println!("Markers: {:?}", marker.iter().count());
+    for m in marker.iter() {
+        describe_gauge!("Test Gauge", m.0.clone());
+        println!("Describing gauge: {}", m.0);
+    }
+}
+
+fn update_graphs(
+    state: Res<AppState>,
+    marker: Query<&Marker>
+) {
+    gauge!("Test Gauge").set(state.frame as f64);
+    for m in marker.iter() {
+        gauge!(m.0.clone()).set(state.frame as f64);
+    }
+}
+
+fn gui(
+    // world: &mut World, 
+    mut egui_context: EguiContexts,
+    mut app_state: ResMut<AppState>,
+    gui_sides: ResMut<GuiSidesEnabled>,
+    // mut setup: Local<bool>,
     ) {
-    let mut egui_context = world
-        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .get_single(world)
-        .unwrap_or(&EguiContext::default())
-        .clone();
-    
-    let hierarchy_enabled;
+    // if !*setup {
+    //     println!("Setting up GUI");
+    //     let commands = world.commands();
+    //     create_dashboard(commands);
+    //     *setup = true;
+    // }
     let timeline_enabled ;
-    let graphs_enabled;
+    let _graphs_enabled;
     {
-        let gui_sides = world.get_resource_ref::<GuiSidesEnabled>().unwrap();
-        hierarchy_enabled = gui_sides.hierarchy_inspector;
         timeline_enabled = gui_sides.timeline;
-        graphs_enabled = gui_sides.graphs;
+        _graphs_enabled = gui_sides.graphs;
     }
-
-    // Graphs
-    if graphs_enabled {
-        egui::SidePanel::left("graphs")
-            .default_width(1000.)
-            .show(egui_context.get_mut(), |ui| {
-                ui.add(egui::Label::new("Graphs"));
-                ui.separator();
-                
-            });
-    }
-
-    if hierarchy_enabled && !graphs_enabled{
-    // Inspector
-    // ui.collapsing(heading, add_contents): interesting for the points
-        egui::SidePanel::left("hierarchy")
-            .default_width(200.0)
-            .show(egui_context.get_mut(), |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    ui.heading("Hierarchy");
-
-                    bevy_inspector_egui::bevy_inspector::hierarchy::hierarchy_ui(
-                        world,
-                        ui,
-                        &mut selected_entities,
-                    );
-
-                    ui.label("Press escape to toggle UI");
-                    ui.allocate_space(ui.available_size());
-                });
-            });
-
-        egui::SidePanel::right("inspector")
-            .default_width(250.0)
-            .show(egui_context.get_mut(), |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    ui.heading("Inspector");
-
-                    match selected_entities.as_slice() {
-                        &[entity] => {
-                            bevy_inspector_egui::bevy_inspector::ui_for_entity(world, entity, ui);
-                        }
-                        entities => {
-                            bevy_inspector_egui::bevy_inspector::ui_for_entities_shared_components(
-                                world, entities, ui,
-                            );
-                        }
-                    }
-
-                    ui.allocate_space(ui.available_size());
-                });
-        });
-    }
-
-    let mut app_state = world.get_resource_mut::<AppState>().unwrap();
     let mut frame  = app_state.frame;
     let mut path = app_state.c3d_path.clone();
     let num_frames = match app_state.num_frames {
@@ -97,7 +74,7 @@ fn gui(world: &mut World,
 
     // Timeline
     if timeline_enabled {
-        egui::TopBottomPanel::bottom("Timeline").show(egui_context.get_mut(), |ui| {
+        egui::TopBottomPanel::bottom("Timeline").show(egui_context.ctx_mut(), |ui| {
 
             let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
