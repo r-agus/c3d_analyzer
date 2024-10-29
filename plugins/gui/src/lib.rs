@@ -49,18 +49,10 @@ fn update_graphs(
 }
 
 fn gui(
-    // world: &mut World, 
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
-    // mut setup: Local<bool>,
-    ) {
-    // if !*setup {
-    //     println!("Setting up GUI");
-    //     let commands = world.commands();
-    //     create_dashboard(commands);
-    //     *setup = true;
-    // }
+) {
     let timeline_enabled ;
     let _graphs_enabled;
     {
