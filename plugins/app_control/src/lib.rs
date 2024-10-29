@@ -36,6 +36,7 @@ impl Plugin for ControlPlugin {
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
+        println!("Control Plugin loaded");
     }
 }
 
@@ -104,6 +105,8 @@ pub struct GuiSidesEnabled {
     pub hierarchy_inspector: bool,
     /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
     pub timeline: bool,
+    /// The graphs contains the variation of a point among the frames, for example, the position of a marker.
+    pub graphs: bool,
 }
 
 
@@ -135,6 +138,8 @@ fn setup(
 
     gui.hierarchy_inspector = false;
     gui.timeline = true;
+    
+    println!("Control PluginSetup done");
 }
 
 fn load_c3d(
@@ -337,8 +342,8 @@ pub fn represent_joins(
     match asset {
         Some(_asset) => {
             for (mut transform, join) in joins_query.iter_mut() {
-                let marker1 = get_marker_position(&join.0, &markers_query);
-                let marker2 = get_marker_position(&join.1, &markers_query);
+                let marker1 = get_marker_position_on_frame(&join.0, &markers_query);
+                let marker2 = get_marker_position_on_frame(&join.1, &markers_query);
                 match (marker1, marker2) {
                     (Some(marker1), Some(marker2)) => {
                         let position = (marker1 + marker2) / 2.0;
@@ -373,7 +378,7 @@ fn change_frame_rate(
 }
 
 /// Obtain the position of a marker in current frame
-fn get_marker_position(
+pub fn get_marker_position_on_frame(
     label: &str,
     markers_query: &Query<(&Marker, &Transform)>,
 ) -> Option<Vec3> {
@@ -383,6 +388,40 @@ fn get_marker_position(
         } 
     }
     None
+}
+
+pub fn get_marker_position_on_all_frames(
+    label: &str,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+    query: Query<(&Transform, &Marker)>,
+) -> Option<Vec<Vec3>> {
+    let asset = c3d_assets.get(&c3d_state.handle);
+    match asset {
+        Some(asset) => {
+            let point_data = &asset.c3d.points;
+            let num_frames = point_data.size().0;
+            let mut frame = 0;
+            let mut i = 0;
+            let mut positions = Vec::new();
+
+            query.iter().for_each(|(_, marker)| {
+                if marker.0 == label {
+                    for _ in 0..num_frames {
+                        positions.push(Vec3::new(
+                            point_data[(frame, i)][0] as f32 / 1000.0,
+                            point_data[(frame, i)][1] as f32 / 1000.0,
+                            point_data[(frame, i)][2] as f32 / 1000.0,
+                        ));
+                        frame += 1;
+                    }
+                }
+                i += 1;
+            });
+            return Some(positions);
+        }
+        None => { return None; }
+    }
 }
 
 /// Change the configuration of the c3d file. This can be used to change the representation of the c3d file.

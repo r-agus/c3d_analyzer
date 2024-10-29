@@ -20,18 +20,32 @@ fn gui(world: &mut World,
     ) {
     let mut egui_context = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .single(world)
+        .get_single(world)
+        .unwrap_or(&EguiContext::default())
         .clone();
     
     let hierarchy_enabled;
     let timeline_enabled ;
+    let graphs_enabled;
     {
         let gui_sides = world.get_resource_ref::<GuiSidesEnabled>().unwrap();
         hierarchy_enabled = gui_sides.hierarchy_inspector;
         timeline_enabled = gui_sides.timeline;
+        graphs_enabled = gui_sides.graphs;
     }
 
-    if hierarchy_enabled{
+    // Graphs
+    if graphs_enabled {
+        egui::SidePanel::left("graphs")
+            .default_width(1000.)
+            .show(egui_context.get_mut(), |ui| {
+                ui.add(egui::Label::new("Graphs"));
+                ui.separator();
+                
+            });
+    }
+
+    if hierarchy_enabled && !graphs_enabled{
     // Inspector
     // ui.collapsing(heading, add_contents): interesting for the points
         egui::SidePanel::left("hierarchy")
@@ -140,14 +154,6 @@ fn gui(world: &mut World,
                 // });
             });
         });
-
-        // FPS window
-        // egui::Window::new("FPS")
-        //     .show(egui_context.get_mut(), |ui| {
-        //         ui.label(format!("{:.2}", app_state.fixed_frame_rate.unwrap_or(0.0)));
-        //         ui.label(format!("{:.2}", app_state.frame_rate.unwrap_or(0.0)));
-        //     });
-
 
         if app_state.frame != frame {
             app_state.frame = frame;
