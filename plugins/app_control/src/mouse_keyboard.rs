@@ -21,7 +21,7 @@ pub fn keyboard_controls (
                 state.render_frame = true;
             }
             KeyCode::Escape => {
-                gui_state.hierarchy_inspector = !gui_state.hierarchy_inspector;
+                // TODO: Implement a way to stop the program    
             }
             KeyCode::KeyT => {
                 gui_state.timeline = !gui_state.timeline;

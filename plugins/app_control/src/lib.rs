@@ -101,8 +101,6 @@ impl AppState {
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
 pub struct GuiSidesEnabled {
-    /// The inspector contains the hierarchy of the entities (world) and the properties of the selected entity.
-    pub hierarchy_inspector: bool,
     /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
     pub timeline: bool,
     /// The graphs contains the variation of a point among the frames, for example, the position of a marker.
@@ -136,7 +134,6 @@ fn setup(
     state.fixed_frame_rate = None;
     state.render_at_fixed_frame_rate = false;
 
-    gui.hierarchy_inspector = false;
     gui.timeline = true;
     
     println!("Control PluginSetup done");
