@@ -390,9 +390,9 @@ pub fn get_marker_position_on_frame(
 
 pub fn get_marker_position_on_all_frames(
     label: &str,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-    query: Query<(&Transform, &Marker)>,
+    c3d_state: &Res<C3dState>,
+    c3d_assets: &Res<Assets<C3dAsset>>,
+    query: &Query<(&Marker, &Transform)>,
 ) -> Option<Vec<Vec3>> {
     let asset = c3d_assets.get(&c3d_state.handle);
     match asset {
@@ -403,11 +403,11 @@ pub fn get_marker_position_on_all_frames(
             let mut i = 0;
             let mut positions = Vec::new();
 
-            query.iter().for_each(|(_, marker)| {
+            query.iter().for_each(|(marker, _)| {
                 if marker.0 == label {
                     for _ in 0..num_frames {
                         positions.push(Vec3::new(
-                            point_data[(frame, i)][0] as f32 / 1000.0,
+                            point_data[(frame, i)][0] as f32 / 1000.0, // frame, point_idx, x/y/z
                             point_data[(frame, i)][1] as f32 / 1000.0,
                             point_data[(frame, i)][2] as f32 / 1000.0,
                         ));

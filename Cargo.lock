@@ -839,7 +839,9 @@ name = "bevy_metrics_dashboard"
 version = "0.3.0"
 dependencies = [
  "bevy",
+ "bevy_c3d_mod",
  "bevy_egui",
+ "control_plugin",
  "egui_plot",
  "float-ord",
  "fuzzy-matcher",
@@ -2481,6 +2483,7 @@ dependencies = [
  "bevy_egui",
  "bevy_metrics_dashboard",
  "control_plugin",
+ "egui_plot",
  "metrics 0.24.0",
 ]
 

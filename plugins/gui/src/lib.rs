@@ -37,12 +37,12 @@ fn _describe_graphs(
 }
 
 fn update_graphs(
-    state: Res<AppState>,
+    _state: Res<AppState>,
     markers_query: Query<(&Marker, &Transform)>,
 ) {
     for (m,t) in markers_query.iter() {
         let pos = t.translation;
-        gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config (we can define namespaces as 'config::marker_name')
+        gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
         gauge!(m.0.clone() + "::y").set(pos[1]);
         gauge!(m.0.clone() + "::z").set(pos[2]);
     }
@@ -69,7 +69,6 @@ fn gui(
     // Timeline
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.ctx_mut(), |ui| {
-
             let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
 

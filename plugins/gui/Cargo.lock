@@ -840,6 +840,7 @@ version = "0.3.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "control_plugin",
  "egui_plot",
  "float-ord",
  "fuzzy-matcher",
@@ -2471,6 +2472,7 @@ dependencies = [
  "bevy_egui",
  "bevy_metrics_dashboard",
  "control_plugin",
+ "egui_plot",
  "metrics 0.24.0",
 ]
 
