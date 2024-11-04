@@ -368,7 +368,6 @@ fn parse_individual_config(
                     if let Some(Value::String(group_name)) = group_ref.get(0) {
                         if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
                             config.add_visible_point_group(points.clone());
-                            // println!("Detected group {:?} with points {:?}", group_name, points);
                         }
                     }
                 },
@@ -455,6 +454,5 @@ fn parse_point_group_config(table: Map<String, Value>) -> Result<PointGroupConfi
         }
     });
     group_config.line_thickness = table.get("line_thickness").and_then(|v| v.as_float());
-    println!("{:?}", group_config);
     Ok(group_config)
 }

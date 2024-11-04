@@ -91,7 +91,6 @@ pub fn text_loaded(
 ) {
     // Check if the asset is loaded
     if let Some(_text_asset) = text_assets.get(&text_handle.0) {
-        // println!("Loaded text content: {}", text_asset.text);
         return;
     }
     println!("Text asset not loaded yet");
