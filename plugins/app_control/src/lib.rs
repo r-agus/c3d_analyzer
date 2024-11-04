@@ -399,13 +399,37 @@ pub fn get_marker_position_on_all_frames(
         Some(asset) => {
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
+
+            return get_marker_position_from_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
+        }
+        None => { return None; }
+    }
+}
+
+pub fn get_marker_position_from_frame_range(
+    label: &str,
+    c3d_state: &Res<C3dState>,
+    c3d_assets: &Res<Assets<C3dAsset>>,
+    query: &Query<(&Marker, &Transform)>,
+    start_frame: usize,
+    end_frame: usize,
+) -> Option<Vec<Vec3>>{
+    let asset = c3d_assets.get(&c3d_state.handle);
+    match asset {
+        Some(asset) => {
+            let point_data = &asset.c3d.points;
+            let num_frames = point_data.size().0;
             let mut frame = 0;
             let mut i = 0;
             let mut positions = Vec::new();
 
             query.iter().for_each(|(marker, _)| {
                 if marker.0 == label {
-                    for _ in 0..num_frames {
+                    if (start_frame > num_frames) || (end_frame > num_frames) || (start_frame > end_frame) {  // Check if the frames are valid. Start and end are usize, so they can't be negative.
+                        println!("Error: Invalid frame range");
+                        return;
+                    }
+                    for _ in start_frame..end_frame {
                         positions.push(Vec3::new(
                             point_data[(frame, i)][0] as f32 / 1000.0, // frame, point_idx, x/y/z
                             point_data[(frame, i)][1] as f32 / 1000.0,
