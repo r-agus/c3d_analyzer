@@ -1,0 +1,56 @@
+[package]
+name = "bevy_metrics_dashboard"
+version = "0.3.0"
+description = "Metrics dashboard for Bevy apps"
+edition = "2021"
+authors = ["Duncan Fairbanks <duncanfairbanks6@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bonsairobo/bevy_metrics_dashboard"
+homepage = "https://github.com/bonsairobo/bevy_metrics_dashboard"
+# documentation = "https://docs.rs/bevy_metrics_dashboard"
+readme = "README.md"
+keywords = ["bevy", "egui", "monitoring"]
+categories = ["development-tools", "game-development"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+opt-level = 2
+
+[features]
+render_metrics = ["bevy/bevy_core_pipeline"]
+
+[dependencies]
+bevy_egui = "0.30"
+egui_plot = "0.29"
+float-ord = "0.3.2"
+fuzzy-matcher = "0.3.7"
+metrics = "0.22.0"
+metrics-util = "0.16.0"
+num-traits = "0.2.18"
+smallvec = "1.13.1"
+control_plugin = { path = "../../app_control" }
+bevy_c3d_mod = { path = "../../bevy_c3d_mod" }
+
+[dependencies.bevy]
+version = "0.14"
+default-features = false
+features = ["multi_threaded"]
+
+[dev-dependencies]
+rand = "0.8.5"
+
+[dev-dependencies.bevy]
+version = "0.14"
+default-features = false
+features = ["bevy_sprite", "png", "wayland"]
+
+[[example]]
+name = "stress"
+path = "examples/stress.rs"
+required-features = ["render_metrics"]
+
+[[example]]
+name = "many_metrics"
+path = "examples/many_metrics.rs"

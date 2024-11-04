@@ -8,7 +8,7 @@ pub fn file_drop(
     mut ev_loaded: EventWriter<C3dLoadedEvent>,
     mut evr_dnd: EventReader<FileDragAndDrop>,
     mut state: ResMut<AppState>,
-    query: Query<(Entity, &Marker)>,
+    query: Query<(Entity, &C3dMarkers)>,
     mut commands: Commands,
 ) {
     for ev in evr_dnd.read() {
@@ -24,6 +24,7 @@ pub fn file_drop(
                         state.c3d_path = path_buf.to_str().unwrap().to_string();
                         state.reload_c3d = true;
                         state.c3d_file_loaded = true;
+                        state.play = false;
                         state.frame = 0;
                         ev_loaded.send(C3dLoadedEvent);
                     }

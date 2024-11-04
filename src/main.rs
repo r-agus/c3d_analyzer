@@ -3,7 +3,12 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use gui_plugin::GUIPlugin;
 use control_plugin::ControlPlugin;
 
+use wasm_bindgen::prelude::*;
+
 fn main() {
+    #[cfg(target_family = "wasm")]
+    start_program();
+
     App::new()
         .add_plugins(ControlPlugin)
         .add_plugins(PanOrbitCameraPlugin)
@@ -48,4 +53,14 @@ fn setup(
             ..default()
         }, 
     ));
+}
+
+#[wasm_bindgen]
+extern "C" {
+    fn notify_start();
+}
+#[cfg(target_family = "wasm")]
+pub fn start_program() {
+    // Llamar a la función de JavaScript para indicar el inicio (eliminar pantalla de carga)
+    notify_start();
 }
