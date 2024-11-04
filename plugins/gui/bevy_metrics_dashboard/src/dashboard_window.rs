@@ -47,7 +47,7 @@ impl DashboardWindow {
             plots: default(),
             config: DashboardConfig{
                 global_window_size: default(),
-                real_time: true,
+                real_time: false,
             },
         }
     }
