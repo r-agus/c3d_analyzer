@@ -13,7 +13,6 @@ impl Plugin for GUIPlugin {
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
             .add_systems(Startup, create_dashboard)
-            .add_systems(Update, update_graphs)
             .add_systems(Update,gui);
     }
 }
@@ -36,22 +35,11 @@ fn _describe_graphs(
     }
 }
 
-fn update_graphs(
-    _state: Res<AppState>,
-    markers_query: Query<(&Marker, &Transform)>,
-) {
-    for (m,t) in markers_query.iter() {
-        let pos = t.translation;
-        gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
-        gauge!(m.0.clone() + "::y").set(pos[1]);
-        gauge!(m.0.clone() + "::z").set(pos[2]);
-    }
-}
-
 fn gui(
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
+    markers_query: Query<(&Marker, &Transform)>,
 ) {
     let timeline_enabled ;
     let _graphs_enabled;
@@ -124,6 +112,13 @@ fn gui(
                 // });
             });
         });
+
+        for (m,t) in markers_query.iter() {
+            let pos = t.translation;
+            gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
+            gauge!(m.0.clone() + "::y").set(pos[1]);
+            gauge!(m.0.clone() + "::z").set(pos[2]);
+        }
 
         if app_state.frame != frame {
             app_state.frame = frame;
