@@ -23,6 +23,9 @@ pub fn keyboard_controls (
             KeyCode::Escape => {
                 // TODO: Implement a way to stop the program    
             }
+            KeyCode::KeyG => {
+                gui_state.graphs = !gui_state.graphs;
+            }
             KeyCode::KeyT => {
                 gui_state.timeline = !gui_state.timeline;
             }

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
 use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
+
+#[cfg(not(target_arch = "wasm32"))]
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
 use control_plugin::*;
@@ -42,10 +44,10 @@ fn gui(
     markers_query: Query<(&Marker, &Transform)>,
 ) {
     let timeline_enabled ;
-    let _graphs_enabled;
+    let graphs_enabled;
     {
         timeline_enabled = gui_sides.timeline;
-        _graphs_enabled = gui_sides.graphs;
+        graphs_enabled = gui_sides.graphs;
     }
     let mut frame  = app_state.frame;
     let mut path = app_state.c3d_path.clone();
@@ -113,6 +115,11 @@ fn gui(
             });
         });
 
+        if graphs_enabled {    
+            
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
         for (m,t) in markers_query.iter() {
             let pos = t.translation;
             gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
