@@ -40,5 +40,5 @@ Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones 
 - [x] Añadir un eje de tiempo
 - [x] Añadir una escena 3D y una cámara
 - [ ] Posibilidad de cambiar la escena en _runtime_
-- [ ] Calcular y representar datos biomecánicos
+- [x] Calcular y representar datos biomecánicos
 
