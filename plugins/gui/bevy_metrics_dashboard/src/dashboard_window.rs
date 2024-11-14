@@ -76,13 +76,13 @@ impl DashboardWindow {
         }
     }
 
-    pub(crate) fn draw_all(
+    pub fn draw_all(
         mut commands: Commands,
         registry: Res<MetricsRegistry>,
         mut cached_configs: ResMut<CachedPlotConfigs>,
         mut ctxts: EguiContexts,
         mut requests: EventReader<RequestPlot>,
-        mut windows: Query<(Entity, &mut Self)>,
+        mut windows: Query<(Entity, &mut Self)>, 
         c3d_state: Res<C3dState>,
         c3d_assets: Res<Assets<C3dAsset>>,
         query: Query<(&Marker, &Transform)>,
@@ -101,6 +101,7 @@ impl DashboardWindow {
                 let label = label.trim_end_matches("::x")
                                        .trim_end_matches("::y")
                                        .trim_end_matches("::z");
+
                 let values = get_marker_position_on_all_frames(label, &c3d_state, &c3d_assets, &query)
                     .unwrap()
                     .iter()

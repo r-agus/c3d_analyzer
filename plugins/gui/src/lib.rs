@@ -15,7 +15,7 @@ impl Plugin for GUIPlugin {
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
             .add_systems(Startup, create_dashboard)
-            .add_systems(Update,gui);
+            .add_systems(Update,(gui, DashboardWindow::draw_all).chain());
     }
 }
 
