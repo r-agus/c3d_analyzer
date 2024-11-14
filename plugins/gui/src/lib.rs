@@ -6,6 +6,7 @@ use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
 use control_plugin::*;
+use egui_double_slider::DoubleSlider;
 
 pub struct GUIPlugin;
 
@@ -15,7 +16,10 @@ impl Plugin for GUIPlugin {
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
             .add_systems(Startup, create_dashboard)
-            .add_systems(Update,(gui, DashboardWindow::draw_all).chain());
+            .add_systems(Update,
+                (gui, 
+                         DashboardWindow::draw_all // TODO: implement a run if condition to toggle this
+                        ).chain());
     }
 }
 
@@ -44,10 +48,8 @@ fn gui(
     markers_query: Query<(&Marker, &Transform)>,
 ) {
     let timeline_enabled ;
-    let graphs_enabled;
     {
         timeline_enabled = gui_sides.timeline;
-        graphs_enabled = gui_sides.graphs;
     }
     let mut frame  = app_state.frame;
     let mut path = app_state.c3d_path.clone();
@@ -60,6 +62,7 @@ fn gui(
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.ctx_mut(), |ui| {
             let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
+            //let traces_slider = DoubleSlider::new(&mut app_state.traces_range, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
 
             ui.spacing_mut().slider_width = half_width;
@@ -114,10 +117,6 @@ fn gui(
                 // });
             });
         });
-
-        if graphs_enabled {    
-            
-        }
 
         #[cfg(not(target_arch = "wasm32"))]
         for (m,t) in markers_query.iter() {

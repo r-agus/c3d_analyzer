@@ -12,3 +12,4 @@ bevy_metrics_dashboard ={ path = "./bevy_metrics_dashboard" }
 control_plugin = { path = "../app_control" }
 metrics = "0.24.0"
 egui_plot = "0.29.0"
+egui_double_slider = "0.3.1"
