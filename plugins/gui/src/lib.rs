@@ -17,9 +17,9 @@ impl Plugin for GUIPlugin {
             .add_plugins(DashboardPlugin)
             .add_systems(Startup, create_dashboard)
             .add_systems(Update,
-                (gui, 
+                    (gui, 
                     DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
-                        ).chain());
+                    ).chain());
     }
 }
 
@@ -85,6 +85,10 @@ fn gui(
                         ui.add(frame_slider
                             .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
                         );
+                    });
+                    ui.horizontal(|ui|{
+                        ui.label("Traces:");
+                        ui.add(DoubleSlider::new(&mut 10., &mut 50., 0.0..=100.0).width(half_width));
                     });
                 });
 
