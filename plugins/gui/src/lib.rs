@@ -18,7 +18,7 @@ impl Plugin for GUIPlugin {
             .add_systems(Startup, create_dashboard)
             .add_systems(Update,
                 (gui, 
-                         DashboardWindow::draw_all // TODO: implement a run if condition to toggle this
+                    DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
                         ).chain());
     }
 }
