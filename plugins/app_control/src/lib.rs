@@ -75,6 +75,29 @@ pub struct AppState {
     pub render_at_fixed_frame_rate: bool,
 }
 
+#[derive(Resource, Default, Debug)]
+/// GuiSidesEnabled contains the information of the GUI sides that are enabled.
+pub struct GuiSidesEnabled {
+    /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
+    pub timeline: bool,
+    /// The graphs contains the variation of a point among the frames, for example, the position of a marker.
+    pub graphs: bool,
+}
+
+
+#[derive(Component)]
+/// This is the marker that represents the points in the C3D file, with its label
+pub struct Marker(pub String);
+
+#[derive(Component)]
+/// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
+pub struct Join(String, String);
+
+#[derive(Component)]
+/// This is a bunch of markers (parent of Marker)
+pub struct C3dMarkers;  
+
+
 impl AppState {
     pub fn default() -> Self {
         AppState {
@@ -97,28 +120,6 @@ impl AppState {
         }
     }
 }
-
-#[derive(Resource, Default, Debug)]
-/// GuiSidesEnabled contains the information of the GUI sides that are enabled.
-pub struct GuiSidesEnabled {
-    /// The timeline contains the path of the c3d, the frame slider and the play/pause button.
-    pub timeline: bool,
-    /// The graphs contains the variation of a point among the frames, for example, the position of a marker.
-    pub graphs: bool,
-}
-
-
-#[derive(Component)]
-/// This is the marker that represents the points in the C3D file, with its label
-pub struct Marker(pub String);
-
-#[derive(Component)]
-/// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
-pub struct Join(String, String);
-
-#[derive(Component)]
-/// This is a bunch of markers (parent of Marker)
-pub struct C3dMarkers;  
 
 fn setup(
     mut state: ResMut<AppState>,
