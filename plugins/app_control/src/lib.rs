@@ -31,7 +31,7 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, represent_joins)
+            .add_systems(Update, (represent_joins, represent_traces))
             .add_systems(Update, (change_frame_rate, change_config))
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
@@ -77,7 +77,7 @@ pub struct AppState {
     pub traces: TraceInfo,
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 /// TraceInfo contains the information of the traces to be represented.
 /// A trace is the representation of a point along the frames in a given range, with no time information.
 /// start_frame: The frame where the trace starts.
@@ -108,6 +108,10 @@ pub struct Marker(pub String);
 pub struct Join(String, String);
 
 #[derive(Component)]
+/// This is the trace of a point along the frames
+pub struct Trace;
+
+#[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
 pub struct C3dMarkers;  
 
@@ -131,12 +135,29 @@ impl AppState {
             render_at_fixed_frame_rate: false,
             // config: None,
             current_config: None,
-            traces: TraceInfo{
-                start_frame: 0.0,
-                end_frame: 0.0,
-                points: Vec::new(),
+            traces: TraceInfo {
+                ..default()
             },
         }
+    }
+
+    pub fn add_point_to_trace(&mut self, point: String) -> &mut Self {
+        self.traces.add_point(point);
+        self
+    }
+}
+
+impl TraceInfo {
+    pub fn default() -> Self {
+        TraceInfo {
+            start_frame: 0.0,
+            end_frame: 0.0,
+            points: Vec::new(),
+        }
+    }
+
+    pub fn add_point(&mut self, point: String) {
+        self.points.push(point);
     }
 }
 
@@ -195,6 +216,7 @@ fn load_c3d(
         
         match c3d_asset {
             Some(asset) => {
+                // Spawn markers
                 for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
                         Vec3::new(1.0, 1.0, 1.0),
@@ -261,6 +283,7 @@ fn load_c3d(
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
 
+                // Spawn joins
                 if let Some(config_file) = config {
                     let config = config_file.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
                     config.get_joins().into_iter().for_each(|joins| {
@@ -374,12 +397,53 @@ pub fn represent_joins(
                         transform.scale = scale;
                     }
                     _ => {
-                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1);
+                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
                     }
                 }
             }      
         },
         None => {}
+    }
+}
+
+pub fn represent_traces(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    state: Res<AppState>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+    query_positions: Query<(&Marker, &Transform)>,
+) {
+    println!("Points: {:?}", state.traces.points.len());
+    for point in &state.traces.points {
+        println!("Point: {:?}", point);
+        let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
+        match positions {
+            Some(positions) => {
+                for position in positions {
+                    println!("Position {:?}", position);
+                    commands.spawn((
+                        PbrBundle {
+                            mesh: meshes.add(
+                                Sphere::new(0.01).mesh()
+                            ),
+                            material: materials.add(StandardMaterial {
+                                base_color: Color::srgb_u8(0, 255, 0),
+                                ..default()
+                            }),
+                            transform: Transform::from_translation(position),
+                            visibility: Visibility::Visible,
+                            ..default()
+                        },    
+                        Trace,
+                    ));
+                }
+            }
+            None => {
+                println!("Error: Trace not found {:?}", point);
+            }
+        }
     }
 }
 
@@ -420,13 +484,13 @@ pub fn get_marker_position_on_all_frames(
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
 
-            return get_marker_position_from_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
+            return get_marker_position_on_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
         }
         None => { return None; }
     }
 }
 
-pub fn get_marker_position_from_frame_range(
+pub fn get_marker_position_on_frame_range(
     label: &str,
     c3d_state: &Res<C3dState>,
     c3d_assets: &Res<Assets<C3dAsset>>,
