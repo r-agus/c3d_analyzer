@@ -47,7 +47,7 @@ fn gui(
     gui_sides: ResMut<GuiSidesEnabled>,
     markers_query: Query<(&Marker, &Transform)>,
 ) {
-    let timeline_enabled ;
+    let timeline_enabled;
     {
         timeline_enabled = gui_sides.timeline;
     }
@@ -88,7 +88,13 @@ fn gui(
                     });
                     ui.horizontal(|ui|{
                         ui.label("Traces:");
-                        ui.add(DoubleSlider::new(&mut 10., &mut 50., 0.0..=100.0).width(half_width));
+                        let (start_frame, end_frame) = {
+                            let traces = &mut app_state.traces;
+                            (&mut traces.start_frame, &mut traces.end_frame)
+                        };
+                        ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=100.0)
+                            .width(half_width))
+                            ;            // TODO: Set a minimun separation of 1 frame
                     });
                 });
 
