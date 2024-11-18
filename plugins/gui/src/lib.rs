@@ -62,7 +62,6 @@ fn gui(
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.ctx_mut(), |ui| {
             let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
-            //let traces_slider = DoubleSlider::new(&mut app_state.traces_range, 0..=(num_frames - 1)).show_value(true);
             let half_width = ui.available_width() * 0.5; 
 
             ui.spacing_mut().slider_width = half_width;
@@ -92,7 +91,7 @@ fn gui(
                             let traces = &mut app_state.traces;
                             (&mut traces.start_frame, &mut traces.end_frame)
                         };
-                        ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=100.0)
+                        ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
                             .width(half_width))
                             ;            // TODO: Set a minimun separation of 1 frame
                     });
