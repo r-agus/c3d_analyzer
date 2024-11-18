@@ -73,6 +73,20 @@ pub struct AppState {
     pub fixed_frame_rate: Option<f64>,
     /// Render at fixed frame rate. If true, the representation will be at the fixed frame rate. If false, the representation will be at the Update schedule decides (typically 60 Hz).
     pub render_at_fixed_frame_rate: bool,
+    /// Trace information. Contains the information of the traces to be represented.
+    pub traces: Vec<TraceInfo>,
+}
+
+#[derive(Debug)]
+/// TraceInfo contains the information of the traces to be represented.
+/// A trace is the representation of a point along the frames in a given range, with no time information.
+/// start_frame: The frame where the trace starts.
+/// end_frame: The frame where the trace ends.
+/// points: The points that are part of the trace.
+pub struct TraceInfo {
+    pub start_frame: usize,
+    pub end_frame: usize,
+    pub points: Vec<String>,
 }
 
 #[derive(Resource, Default, Debug)]
@@ -117,6 +131,7 @@ impl AppState {
             render_at_fixed_frame_rate: false,
             // config: None,
             current_config: None,
+            traces: Vec::new(),
         }
     }
 }
