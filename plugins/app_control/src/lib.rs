@@ -31,7 +31,7 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, (represent_joins, represent_traces, despawn_all_traces_event, despawn_trace))
+            .add_systems(Update, (represent_joins, represent_traces, delete_all_traces_event, delete_trace))
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<UpdateTraceEvent>()
             .add_event::<DeleteTraceEvent>()
@@ -477,7 +477,7 @@ pub fn represent_traces(
     }
 }
 
-fn despawn_trace(
+fn delete_trace(
     mut delete_trace_event: EventReader<DeleteTraceEvent>,
     mut commands: Commands,
     mut state: ResMut<AppState>,
@@ -495,13 +495,15 @@ fn despawn_trace(
     }
 }
 
-fn despawn_all_traces_event(
+fn delete_all_traces_event(
     mut delete_all_traces_event: EventReader<DeleteAllTracesEvent>,
     mut commands: Commands,
+    mut state: ResMut<AppState>,
     query_traces: Query<Entity, With<Trace>>,
 ) {
     for _ in delete_all_traces_event.read() {
         despawn_all_traces(&mut commands, &query_traces);
+        state.traces.points.clear();
     }
 }
 
