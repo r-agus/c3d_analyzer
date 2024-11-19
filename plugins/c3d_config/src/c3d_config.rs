@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 use toml::{Value, map::Map};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
@@ -137,6 +137,10 @@ impl ConfigFile {
 
     pub fn get_config(&self, config_name: &str) -> Option<&Config> {
         self.config_name.get(config_name)
+    }
+
+    pub fn get_config_name(&self, config: &Config) -> String {
+        self.config_name.iter().find_map(|(name, c)| if c == config { Some(name.clone()) } else { None }).unwrap_or("Others".to_string())
     }
 
     pub fn get_all_configs(&self) -> Vec<&Config> {
@@ -271,6 +275,27 @@ impl ConfigFile {
         };
         matching_points
     }
+
+    pub fn get_all_configs_that_contain_point(&self, label: &str) -> Vec<&Config> {
+        let mut matching_configs = Vec::new();
+        for config in self.config_name.values() {
+            if config.contains_point_regex(label) {
+                matching_configs.push(config);
+            }
+        }
+        matching_configs
+    }
+
+    pub fn get_all_config_names_that_contain_point(&self, label: &str) -> Vec<String> {
+        let mut matching_configs = Vec::new();
+        for (config_name, config) in self.config_name.iter() {
+            if config.contains_point_regex(label) {
+                matching_configs.push(config_name.clone());
+            }
+        }
+        matching_configs
+    }
+
 }
 
 pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Config {
