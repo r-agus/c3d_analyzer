@@ -1,6 +1,6 @@
 //! The process-global metrics registry.
 
-use crate::{metric_kind_str, unit_str};
+use crate::unit_str;
 use bevy::{
     prelude::{default, Res, Resource},
     utils::HashMap,
@@ -169,9 +169,11 @@ impl MetricKey {
             self.key.name()
         };
         if n_duplicates > 0 {
-            format!("{} ({}) {n_duplicates}", name, metric_kind_str(self.kind))
+            // format!("{} ({}) {n_duplicates}", name, metric_kind_str(self.kind))
+            format!("{} {n_duplicates}", name)
         } else {
-            format!("{} ({})", name, metric_kind_str(self.kind))
+            // format!("{} ({})", name, metric_kind_str(self.kind))
+            format!("{}", name)
         }
     }
 }

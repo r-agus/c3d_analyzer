@@ -11,9 +11,10 @@ use bevy_egui::{
     EguiContexts,
 };
 use std::{
-    sync::atomic::{AtomicU64, Ordering},
-    time::{Duration, Instant},
+    borrow::BorrowMut, sync::atomic::{AtomicU64, Ordering}, time::{Duration, Instant}
 };
+
+use control_plugin::{AppState, DeleteTraceEvent, TraceInfo, UpdateTraceEvent};
 
 /// A widget that shows all metrics metadata in a tree, grouped by namespace.
 ///
@@ -56,8 +57,11 @@ impl NamespaceTreeWindow {
     }
 
     pub(crate) fn draw_all(
+        mut update_trace_event: EventWriter<UpdateTraceEvent>,
+        mut delete_trace_event: EventWriter<DeleteTraceEvent>,
         mut commands: Commands,
         registry: Res<MetricsRegistry>,
+        mut app_state: ResMut<AppState>,
         mut ctxts: EguiContexts,
         mut requests: EventWriter<RequestPlot>,
         mut windows: Query<(Entity, &mut Self)>,
@@ -69,7 +73,8 @@ impl NamespaceTreeWindow {
                 .id(window.id)
                 .open(&mut open)
                 .show(ctxt, |ui| {
-                    if let Some(result) = window.draw(&registry, ui) {
+                    let result = window.draw(&registry, app_state.borrow_mut(), &mut update_trace_event, &mut delete_trace_event, ui);
+                    if let Some(result) = result {
                         requests.send(RequestPlot {
                             key: result.key,
                             unit: result.description.and_then(|d| d.unit),
@@ -85,7 +90,7 @@ impl NamespaceTreeWindow {
     /// Draw the widget and accept user input.
     ///
     /// If the user selects a metric, it will be returned.
-    pub fn draw(&mut self, registry: &MetricsRegistry, ui: &mut Ui) -> Option<SearchResult> {
+    pub fn draw(&mut self, registry: &MetricsRegistry, app_state: &mut AppState, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DeleteTraceEvent>, ui: &mut Ui) -> Option<SearchResult> {
         if self.force_refresh || self.last_refresh_time.elapsed() > self.refresh_period {
             self.force_refresh = false;
             let task_registry = registry.clone();
@@ -107,21 +112,42 @@ impl NamespaceTreeWindow {
 
         let mut selected = None;
         egui::ScrollArea::new([false, true]).show(ui, |ui| {
-            Self::draw_recursive(&self.roots, &mut selected, ui);
+            Self::draw_recursive(&self.roots, &mut selected, &mut Some(&mut app_state.traces), update_trace_event, delete_trace_event, ui);
         });
         selected
     }
 
-    fn draw_recursive(nodes: &[NamespaceNode], selected: &mut Option<SearchResult>, ui: &mut Ui) {
+    fn draw_recursive(nodes: &[NamespaceNode], selected_plot: &mut Option<SearchResult>, selected_trace: &mut Option<&mut TraceInfo>, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DeleteTraceEvent>, ui: &mut Ui) {
         for node in nodes {
             match node {
                 NamespaceNode::Namespace {
                     display_path: path_component,
                     children,
                 } => {
-                    ui.collapsing(path_component, |ui| {
-                        Self::draw_recursive(children, selected, ui);
+                    ui.horizontal(|ui| {
+                        let text = if selected_trace
+                            .as_ref()
+                            .is_some_and(|s| !s.is_trace_added(path_component.to_string())) 
+                                {
+                                    "Trace"
+                                } else {
+                                    "Remove Trace"
+                                };
+                        if ui.button(text).clicked() {
+                            if let Some(trace) = selected_trace.as_mut() {
+                                if !trace.is_trace_added(path_component.to_string()){
+                                    trace.add_point(path_component.to_string());
+                                    update_trace_event.send(UpdateTraceEvent);
+                                } else{
+                                    delete_trace_event.send(DeleteTraceEvent(path_component.to_string()));
+                                }
+                            } 
+                        }
+                        ui.collapsing(path_component, |ui| {
+                            Self::draw_recursive(children, selected_plot, &mut None, update_trace_event, delete_trace_event, ui);
+                        });
                     });
+
                 }
                 NamespaceNode::Metric {
                     display_path,
@@ -129,7 +155,7 @@ impl NamespaceTreeWindow {
                 } => {
                     ui.horizontal(|ui| {
                         if ui.button("Plot").clicked() {
-                            *selected = Some(result.clone());
+                            *selected_plot = Some(result.clone());
                         }
                         ui.label(result.detailed_text(Some(display_path)));
                     });

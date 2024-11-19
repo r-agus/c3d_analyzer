@@ -28,6 +28,7 @@ pub enum MetricPlotConfig {
 }
 
 impl MetricPlotConfig {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn default_for_kind(kind: MetricKind) -> Self {
         match kind {
             MetricKind::Counter => MetricPlotConfig::Counter(default()),

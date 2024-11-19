@@ -1,16 +1,20 @@
 use bevy::{ecs::entity::Entities, prelude::*};
-use metrics::{describe_gauge, describe_histogram, gauge, histogram, Unit};
+
+#[cfg(not(target_arch = "wasm32"))]
+use metrics::{describe_gauge, describe_histogram, gauge, histogram, Unit}; // Not available in web
 
 /// Provides core metrics like frame time, entity count, etc.
 pub struct CoreMetricsPlugin;
 
 impl Plugin for CoreMetricsPlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(Startup, describe_core_metrics)
             .add_systems(Update, update_core_metrics);
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn describe_core_metrics() {
     describe_gauge!("frame_time", Unit::Milliseconds, "Frame time delta");
     describe_histogram!("frame_time", Unit::Milliseconds, "Frame time delta");
@@ -26,6 +30,7 @@ fn describe_core_metrics() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn update_core_metrics(entities: &Entities, time: Res<Time>) {
     gauge!("entities").set(entities.len() as f64);
 

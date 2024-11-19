@@ -31,8 +31,11 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, represent_joins)
+            .add_systems(Update, (represent_joins, represent_traces, delete_all_traces_event, delete_trace))
             .add_systems(Update, (change_frame_rate, change_config))
+            .add_event::<UpdateTraceEvent>()
+            .add_event::<DeleteTraceEvent>()
+            .add_event::<DeleteAllTracesEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -73,30 +76,30 @@ pub struct AppState {
     pub fixed_frame_rate: Option<f64>,
     /// Render at fixed frame rate. If true, the representation will be at the fixed frame rate. If false, the representation will be at the Update schedule decides (typically 60 Hz).
     pub render_at_fixed_frame_rate: bool,
+    /// Trace information. Contains the information of the traces to be represented.
+    pub traces: TraceInfo,
 }
 
-impl AppState {
-    pub fn default() -> Self {
-        AppState {
-            frame: 0,
-            num_frames: 0,
-            c3d_path: "".to_string(),
-            config_path: "".to_string(),
-            reload_c3d: false,
-            config_loaded: false,
-            c3d_file_loaded: false,
-            change_config: false,
-            reload_config: false,
-            play: false,
-            render_frame: false,
-            frame_rate: None,
-            fixed_frame_rate: None,
-            render_at_fixed_frame_rate: false,
-            // config: None,
-            current_config: None,
-        }
-    }
+#[derive(Clone, Default, Debug)]
+/// TraceInfo contains the information of the traces to be represented.
+/// A trace is the representation of a point along the frames in a given range, with no time information.
+/// start_frame: The frame where the trace starts.
+/// end_frame: The frame where the trace ends.
+/// points: The points that are part of the trace.
+pub struct TraceInfo {
+    pub start_frame: f32,
+    pub end_frame: f32,
+    pub points: Vec<String>,
 }
+
+#[derive(Event)]
+pub struct UpdateTraceEvent;
+
+#[derive(Event)]
+pub struct DeleteTraceEvent(pub String);
+
+#[derive(Event)]
+pub struct DeleteAllTracesEvent;
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
@@ -117,8 +120,74 @@ pub struct Marker(pub String);
 pub struct Join(String, String);
 
 #[derive(Component)]
+/// This is the trace of a point along the frames
+pub struct Trace(pub String);
+
+#[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
 pub struct C3dMarkers;  
+
+
+impl AppState {
+    pub fn default() -> Self {
+        AppState {
+            frame: 0,
+            num_frames: 0,
+            c3d_path: "".to_string(),
+            config_path: "".to_string(),
+            reload_c3d: false,
+            config_loaded: false,
+            c3d_file_loaded: false,
+            change_config: false,
+            reload_config: false,
+            play: false,
+            render_frame: false,
+            frame_rate: None,
+            fixed_frame_rate: None,
+            render_at_fixed_frame_rate: false,
+            // config: None,
+            current_config: None,
+            traces: TraceInfo {
+                ..default()
+            },
+        }
+    }
+
+    pub fn add_point_to_trace(&mut self, point: String) -> &mut Self {
+        self.traces.add_point(point);
+        self
+    }
+
+    pub fn remove_point_from_trace(&mut self, point: String) -> &mut Self {
+        self.traces.remove_point(point);
+        self
+    }
+}
+
+impl TraceInfo {
+    pub fn default() -> Self {
+        TraceInfo {
+            start_frame: 0.0,
+            end_frame: 0.0,
+            points: Vec::new(),
+        }
+    }
+
+    pub fn is_trace_added (
+        &self,
+        trace: String,
+    ) -> bool {
+        self.points.contains(&trace)
+    }
+
+    pub fn add_point(&mut self, point: String) {
+        self.points.push(point);
+    }
+
+    pub fn remove_point(&mut self, point: String) {
+        self.points.retain(|x| x != &point);
+    }
+}
 
 fn setup(
     mut state: ResMut<AppState>,
@@ -175,6 +244,7 @@ fn load_c3d(
         
         match c3d_asset {
             Some(asset) => {
+                // Spawn markers
                 for label in &asset.c3d.points.labels {
                     let matrix = Mat4::from_scale_rotation_translation(
                         Vec3::new(1.0, 1.0, 1.0),
@@ -241,6 +311,7 @@ fn load_c3d(
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
 
+                // Spawn joins
                 if let Some(config_file) = config {
                     let config = config_file.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
                     config.get_joins().into_iter().for_each(|joins| {
@@ -354,12 +425,95 @@ pub fn represent_joins(
                         transform.scale = scale;
                     }
                     _ => {
-                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1);
+                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
                     }
                 }
             }      
         },
         None => {}
+    }
+}
+
+pub fn represent_traces(
+    mut events: EventReader<UpdateTraceEvent>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    state: Res<AppState>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+    query_positions: Query<(&Marker, &Transform)>,
+    query_traces: Query<Entity, With<Trace>>,
+) {
+    for _ in events.read() {
+        despawn_all_traces(&mut commands, &query_traces);
+        for point in &state.traces.points {
+            let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
+            match positions {
+                Some(positions) => {
+                    for position in positions {
+                        commands.spawn((
+                            PbrBundle {
+                                mesh: meshes.add(
+                                    Sphere::new(0.005).mesh()
+                                ),
+                                material: materials.add(StandardMaterial {
+                                    base_color: Color::srgb_u8(49, 0, 69),
+                                    ..default()
+                                }),
+                                transform: Transform::from_translation(position),
+                                visibility: Visibility::Visible,
+                                ..default()
+                            },    
+                            Trace(point.clone()),
+                        ));
+                    }
+                }
+                None => {
+                    println!("Error: Trace not found {:?}", point);
+                }
+            }
+        }
+    }
+}
+
+fn delete_trace(
+    mut delete_trace_event: EventReader<DeleteTraceEvent>,
+    mut commands: Commands,
+    mut state: ResMut<AppState>,
+    query_traces: Query<(Entity, &Trace)>,
+) {
+    for delete_trace in delete_trace_event.read() {
+        for (entity, trace) in query_traces.iter() {
+            let target_trace = delete_trace.0.clone();
+            if trace.0 == target_trace {
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+        state.remove_point_from_trace(delete_trace.0.clone());
+        println!("Trace removed: {:?}", delete_trace.0);
+    }
+}
+
+fn delete_all_traces_event(
+    mut delete_all_traces_event: EventReader<DeleteAllTracesEvent>,
+    mut commands: Commands,
+    mut state: ResMut<AppState>,
+    query_traces: Query<Entity, With<Trace>>,
+) {
+    for _ in delete_all_traces_event.read() {
+        despawn_all_traces(&mut commands, &query_traces);
+        state.traces.points.clear();
+    }
+}
+
+#[inline]
+fn despawn_all_traces(
+    commands: &mut Commands,
+    query_traces: &Query<Entity, With<Trace>>,
+) {
+    for entity in query_traces.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 
@@ -400,13 +554,13 @@ pub fn get_marker_position_on_all_frames(
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
 
-            return get_marker_position_from_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
+            return get_marker_position_on_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
         }
         None => { return None; }
     }
 }
 
-pub fn get_marker_position_from_frame_range(
+pub fn get_marker_position_on_frame_range(
     label: &str,
     c3d_state: &Res<C3dState>,
     c3d_assets: &Res<Assets<C3dAsset>>,
@@ -419,7 +573,6 @@ pub fn get_marker_position_from_frame_range(
         Some(asset) => {
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
-            let mut frame = 0;
             let mut i = 0;
             let mut positions = Vec::new();
 
@@ -429,13 +582,12 @@ pub fn get_marker_position_from_frame_range(
                         println!("Error: Invalid frame range");
                         return;
                     }
-                    for _ in start_frame..end_frame {
+                    for frame in start_frame..end_frame {
                         positions.push(Vec3::new(
                             point_data[(frame, i)][0] as f32 / 1000.0, // frame, point_idx, x/y/z
                             point_data[(frame, i)][1] as f32 / 1000.0,
                             point_data[(frame, i)][2] as f32 / 1000.0,
                         ));
-                        frame += 1;
                     }
                 }
                 i += 1;

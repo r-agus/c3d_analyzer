@@ -6,6 +6,7 @@ use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
 use control_plugin::*;
+use egui_double_slider::DoubleSlider;
 
 pub struct GUIPlugin;
 
@@ -15,7 +16,10 @@ impl Plugin for GUIPlugin {
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
             .add_systems(Startup, create_dashboard)
-            .add_systems(Update,gui);
+            .add_systems(Update,
+                    (gui, 
+                    DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
+                    ).chain());
     }
 }
 
@@ -38,16 +42,16 @@ fn _describe_graphs(
 }
 
 fn gui(
+    mut update_trace_event: EventWriter<UpdateTraceEvent>,
+    mut delete_all_traces_event: EventWriter<DeleteAllTracesEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
     markers_query: Query<(&Marker, &Transform)>,
 ) {
-    let timeline_enabled ;
-    let graphs_enabled;
+    let timeline_enabled;
     {
         timeline_enabled = gui_sides.timeline;
-        graphs_enabled = gui_sides.graphs;
     }
     let mut frame  = app_state.frame;
     let mut path = app_state.c3d_path.clone();
@@ -83,6 +87,25 @@ fn gui(
                             .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
                         );
                     });
+                    ui.horizontal(|ui|{
+                        let (start_frame, end_frame) = {
+                            let traces = &mut app_state.traces;
+                            (&mut traces.start_frame, &mut traces.end_frame)
+                        };
+                        let start_frame_copy = *start_frame;
+                        let end_frame_copy = *end_frame;
+                        ui.label("Traces:");
+                        ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
+                            .separation_distance(1.0)
+                            .width(half_width));
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            delete_all_traces_event.send(DeleteAllTracesEvent);
+                        }
+
+                        if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
+                            update_trace_event.send(UpdateTraceEvent);
+                        }
+                    });
                 });
 
                 ui.vertical(|ui| {
@@ -109,15 +132,11 @@ fn gui(
                             };
                         });
                     });
-                }
+                }                
 
                 // });
             });
         });
-
-        if graphs_enabled {    
-            
-        }
 
         #[cfg(not(target_arch = "wasm32"))]
         for (m,t) in markers_query.iter() {

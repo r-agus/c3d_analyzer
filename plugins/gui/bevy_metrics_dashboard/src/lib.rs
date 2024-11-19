@@ -40,7 +40,7 @@ pub use metrics_util;
 use metrics::Unit;
 use metrics_util::MetricKind;
 
-fn metric_kind_str(kind: MetricKind) -> &'static str {
+fn _metric_kind_str(kind: MetricKind) -> &'static str {
     match kind {
         MetricKind::Counter => "counter",
         MetricKind::Gauge => "gauge",

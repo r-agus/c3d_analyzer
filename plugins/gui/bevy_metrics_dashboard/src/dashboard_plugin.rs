@@ -15,7 +15,7 @@ impl Plugin for DashboardPlugin {
             .init_resource::<CachedPlotConfigs>()
             .add_systems(
                 Update,
-                (DashboardWindow::draw_all, NamespaceTreeWindow::draw_all),
+                NamespaceTreeWindow::draw_all, // Removed DashboardWindow::draw_all 
             )
             // Enforce strict ordering:s
             // metrics producers (before Last) --> metrics consumers --> bucket clearing
