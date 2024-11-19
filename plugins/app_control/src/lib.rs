@@ -307,6 +307,10 @@ fn load_c3d(
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
                 println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
                 
+                let num_frames = asset.c3d.points.size().0;
+                app_state.num_frames = num_frames;
+                app_state.traces.end_frame = num_frames as f32 / 20.0; 
+
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
                 }
@@ -373,7 +377,7 @@ pub fn represent_points(
             let num_frames = point_data.size().0;
             let mut i = 0;
             
-            state.num_frames = num_frames;
+            //state.num_frames = num_frames;
 
             for (_points, children) in query_points.iter() {
                 for &child in children.iter() {
@@ -445,7 +449,7 @@ pub fn represent_traces(
     query_positions: Query<(&Marker, &Transform)>,
     query_traces: Query<Entity, With<Trace>>,
 ) {
-    for _ in events.read() {
+    if let Some(_) = events.read().last() {     // We just care about last event
         despawn_all_traces(&mut commands, &query_traces);
         for point in &state.traces.points {
             let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
@@ -501,7 +505,7 @@ fn delete_all_traces_event(
     mut state: ResMut<AppState>,
     query_traces: Query<Entity, With<Trace>>,
 ) {
-    for _ in delete_all_traces_event.read() {
+    if let Some(_) = delete_all_traces_event.read().last() {
         despawn_all_traces(&mut commands, &query_traces);
         state.traces.points.clear();
     }
