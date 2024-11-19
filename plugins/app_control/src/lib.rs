@@ -571,7 +571,6 @@ pub fn get_marker_position_on_frame_range(
         Some(asset) => {
             let point_data = &asset.c3d.points;
             let num_frames = point_data.size().0;
-            let mut frame = 0;
             let mut i = 0;
             let mut positions = Vec::new();
 
@@ -581,13 +580,12 @@ pub fn get_marker_position_on_frame_range(
                         println!("Error: Invalid frame range");
                         return;
                     }
-                    for _ in start_frame..end_frame {
+                    for frame in start_frame..end_frame {
                         positions.push(Vec3::new(
                             point_data[(frame, i)][0] as f32 / 1000.0, // frame, point_idx, x/y/z
                             point_data[(frame, i)][1] as f32 / 1000.0,
                             point_data[(frame, i)][2] as f32 / 1000.0,
                         ));
-                        frame += 1;
                     }
                 }
                 i += 1;
