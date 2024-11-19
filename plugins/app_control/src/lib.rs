@@ -227,7 +227,7 @@ fn spawn_marker(
         PbrBundle {
             mesh: meshes.add(
                 // Obtain radius from get_point_size
-                Sphere::new(match &config {
+                Sphere::new(match config.as_ref() {
                     Some(config) => {
                         if let Some(size) = config.get_point_size(label, current_config) {
                             0.014 * size as f32
@@ -241,7 +241,7 @@ fn spawn_marker(
             ),
             material: materials.add(StandardMaterial {
                 // Obtain color from get_point_color
-                base_color: match &config {
+                base_color: match config.as_ref() {
                     Some(config) => {
                         if let Some(color) = config.get_point_color(label, current_config){
                             if color.len() == 3 {
@@ -260,7 +260,7 @@ fn spawn_marker(
                 ..default()
             }),
             transform: Transform::from_matrix(matrix),
-            visibility: match &config {
+            visibility: match config.as_ref() {
                 Some(config) => {
                     if config.contains_point_regex(current_config, label) {
                         Visibility::Visible
@@ -286,8 +286,12 @@ fn load_c3d(
     mut app_state: ResMut<AppState>,
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
+    query_markers: Query<(Entity, &C3dMarkers)>,
 ) {
     if let Some(_) = events.read().last() {
+        
+        despawn_all_markers(&mut commands, &query_markers);
+
         let c3d_asset = c3d_assets.get(&c3d_state.handle);
         let points = 
             commands
@@ -301,7 +305,7 @@ fn load_c3d(
                 .id();
         let config_asset = config_assets.get(&config_state.handle); // This contains the literal text of the configuration file.
         let current_config = app_state.current_config.as_deref().unwrap_or("");
-        let config = match config_asset {
+        let config_file = match config_asset {
             Some(asset) => parse_config(&asset.config_str, false).ok(),
             None => {
                 println!("Config not loaded");
@@ -313,12 +317,14 @@ fn load_c3d(
             Some(asset) => {
                 // Spawn markers
                 for label in &asset.c3d.points.labels {
-                    if let Some(configs) = &config {
-                        for config in configs.get_all_config_names_that_contain_point(label) {
-                            println!("Config {} contains {}", config, label);        
+                    if let Some(configs) = &config_file {
+                        for config in configs.get_all_configs_that_contain_point(label) {
+                            let conf_str = configs.get_config_name(config);
+                            spawn_marker((conf_str + "::" + label).as_str(), current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
                         }
+                    } else {
+                        spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
                     }
-                    spawn_marker(label, current_config, &config, points, &mut commands, &mut meshes, &mut materials);
                 }
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
@@ -334,7 +340,7 @@ fn load_c3d(
                 }
 
                 // Spawn joins
-                if let Some(config_file) = config {
+                if let Some(config_file) = config_file {
                     let config = config_file.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
                     config.get_joins().into_iter().for_each(|joins| {
                         joins.into_iter().for_each(|join| {
@@ -617,6 +623,15 @@ pub fn get_marker_position_on_frame_range(
             return Some(positions);
         }
         None => { return None; }
+    }
+}
+
+fn despawn_all_markers(
+    commands: &mut Commands,
+    query_markers: &Query<(Entity, &C3dMarkers)>,
+) {
+    for (entity, _) in query_markers.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 
