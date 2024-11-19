@@ -5,7 +5,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
-use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigState};
+use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
 
 pub struct ControlPlugin;
 
@@ -209,6 +209,73 @@ fn setup(
     println!("Control PluginSetup done");
 }
 
+fn spawn_marker(
+    label: &str,
+    current_config: &str,
+    config: &Option<ConfigFile>,
+    points: Entity,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+){
+    let matrix = Mat4::from_scale_rotation_translation(
+        Vec3::new(1.0, 1.0, 1.0),
+        Quat::from_rotation_y(0.0),
+        Vec3::new(0.0, 0.0, 0.0),
+    );
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(
+                // Obtain radius from get_point_size
+                Sphere::new(match &config {
+                    Some(config) => {
+                        if let Some(size) = config.get_point_size(label, current_config) {
+                            0.014 * size as f32
+                        } else {
+                            0.014
+                        }
+                    }
+                    None => { 0.014 }
+                })
+                .mesh(),
+            ),
+            material: materials.add(StandardMaterial {
+                // Obtain color from get_point_color
+                base_color: match &config {
+                    Some(config) => {
+                        if let Some(color) = config.get_point_color(label, current_config){
+                            if color.len() == 3 {
+                                Color::srgb_u8(color[0], color[1], color[2])
+                            } else if color.len() == 4 {
+                                Color::srgba_u8(color[0], color[1], color[2], color[3])
+                            } else {
+                                Color::srgb(0.0, 0.0, 1.0)
+                            }
+                        } else {
+                            Color::srgb(0.0, 0.0, 1.0)
+                        }
+                    }
+                    None => { Color::srgb(0.0, 0.0, 1.0) }
+                },
+                ..default()
+            }),
+            transform: Transform::from_matrix(matrix),
+            visibility: match &config {
+                Some(config) => {
+                    if config.contains_point_regex(current_config, label) {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    }
+                }
+                None => { Visibility::Visible }
+            },
+            ..default()
+        },
+        Marker(label.to_string()),
+    )).set_parent(points);
+}
+
 fn load_c3d(
     mut events: EventReader<C3dLoadedEvent>,
     c3d_state: ResMut<C3dState>,
@@ -246,63 +313,14 @@ fn load_c3d(
             Some(asset) => {
                 // Spawn markers
                 for label in &asset.c3d.points.labels {
-                    let matrix = Mat4::from_scale_rotation_translation(
-                        Vec3::new(1.0, 1.0, 1.0),
-                        Quat::from_rotation_y(0.0),
-                        Vec3::new(0.0, 0.0, 0.0),
-                    );
-                    commands.spawn((
-                        PbrBundle {
-                            mesh: meshes.add(
-                                // Obtain radius from get_point_size
-                                Sphere::new(match &config {
-                                    Some(config) => {
-                                        if let Some(size) = config.get_point_size(label, current_config) {
-                                            0.014 * size as f32
-                                        } else {
-                                            0.014
-                                        }
-                                    }
-                                    None => { 0.014 }
-                                })
-                                .mesh(),
-                            ),
-                            material: materials.add(StandardMaterial {
-                                // Obtain color from get_point_color
-                                base_color: match &config {
-                                    Some(config) => {
-                                        if let Some(color) = config.get_point_color(label, current_config){
-                                            if color.len() == 3 {
-                                                Color::srgb_u8(color[0], color[1], color[2])
-                                            } else if color.len() == 4 {
-                                                Color::srgba_u8(color[0], color[1], color[2], color[3])
-                                            } else {
-                                                Color::srgb(0.0, 0.0, 1.0)
-                                            }
-                                        } else {
-                                            Color::srgb(0.0, 0.0, 1.0)
-                                        }
-                                    }
-                                    None => { Color::srgb(0.0, 0.0, 1.0) }
-                                },
-                                ..default()
-                            }),
-                            transform: Transform::from_matrix(matrix),
-                            visibility: match &config {
-                                Some(config) => {
-                                    if config.contains_point_regex(current_config, label) {
-                                        Visibility::Visible
-                                    } else {
-                                        Visibility::Hidden
-                                    }
-                                }
-                                None => { Visibility::Visible }
-                            },
-                            ..default()
-                        },
-                        Marker(label.clone()),
-                    )).set_parent(points);
+                    if let Some(configs) = &config {
+                        for config in configs.get_all_config_names_that_contain_point(label) {
+                            println!("Config {} contains {}", config, label);        
+                        }
+                    }
+                    spawn_marker(label, current_config, &config, points, &mut commands, &mut meshes, &mut materials);
                 }
+
                 let current_config = app_state.current_config.clone().unwrap_or_default();
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
                 println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
