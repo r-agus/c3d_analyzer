@@ -43,6 +43,7 @@ fn _describe_graphs(
 
 fn gui(
     mut update_trace_event: EventWriter<UpdateTraceEvent>,
+    mut delete_all_traces_event: EventWriter<DeleteAllTracesEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
@@ -97,6 +98,9 @@ fn gui(
                         ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
                             .separation_distance(1.0)
                             .width(half_width));
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            delete_all_traces_event.send(DeleteAllTracesEvent);
+                        }
 
                         if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
                             update_trace_event.send(UpdateTraceEvent);
