@@ -1081,6 +1081,7 @@ dependencies = [
  "bevy",
  "bevy_c3d_mod",
  "bevy_egui",
+ "config_plugin",
  "control_plugin",
  "egui_plot",
  "float-ord",
