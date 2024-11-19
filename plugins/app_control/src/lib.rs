@@ -322,14 +322,7 @@ fn load_c3d(
             Some(asset) => {
                 // Spawn markers
                 for label in &asset.c3d.points.labels {
-                    if let Some(configs) = &config_file {
-                        for config in configs.get_all_configs_that_contain_point(label) {
-                            let conf_str = configs.get_config_name(config);
-                            spawn_marker((conf_str + "::" + label).as_str(), current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
-                        }
-                    } else {
-                        spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
-                    }
+                    spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
                 }
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
@@ -458,7 +451,7 @@ pub fn represent_joins(
                         transform.scale = scale;
                     }
                     _ => {
-                        println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
+                        //println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
                     }
                 }
             }      
@@ -610,7 +603,7 @@ pub fn get_marker_position_on_frame_range(
             let mut positions = Vec::new();
 
             query.iter().for_each(|(marker, _)| {
-                if marker.0 == label {
+                if marker.0.split("::").any(|l| {l == label}) {
                     if (start_frame > num_frames) || (end_frame > num_frames) || (start_frame > end_frame) {  // Check if the frames are valid. Start and end are usize, so they can't be negative.
                         println!("Error: Invalid frame range");
                         return;
@@ -625,6 +618,7 @@ pub fn get_marker_position_on_frame_range(
                 }
                 i += 1;
             });
+            println!("There are {} positions for label {}", positions.len(), label);
             return Some(positions);
         }
         None => { return None; }
@@ -654,7 +648,6 @@ fn despawn_all_markers_event(
 fn change_config(
     mut state: ResMut<AppState>,
     mut commands: Commands,
-    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
     query_joins: Query<(Entity, &Join)>,
     mut ev_loaded: EventWriter<C3dLoadedEvent>,
 ) {
@@ -663,10 +656,7 @@ fn change_config(
     }
     state.change_config = false;
     
-    // First we need to despawn all the markers (and its parent, C3dMarker), joins
-    for (entity, _) in query_c3d_markers.iter() {
-        commands.entity(entity).despawn_recursive(); // Also despawns the children (markers)
-    }
+    // TODO: Despawn all joins in separate function
     for (entity, _) in query_joins.iter() {
         commands.entity(entity).despawn_recursive();
     }
