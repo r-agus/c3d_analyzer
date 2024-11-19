@@ -43,7 +43,7 @@ fn _describe_graphs(
 
 fn gui(
     mut update_trace_event: EventWriter<UpdateTraceEvent>,
-    mut delete_all_traces_event: EventWriter<DeleteAllTracesEvent>,
+    mut delete_all_traces_event: EventWriter<DespawnAllTracesEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
@@ -99,7 +99,7 @@ fn gui(
                             .separation_distance(1.0)
                             .width(half_width));
                         if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            delete_all_traces_event.send(DeleteAllTracesEvent);
+                            delete_all_traces_event.send(DespawnAllTracesEvent);
                         }
 
                         if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {

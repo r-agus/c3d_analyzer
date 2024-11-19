@@ -14,7 +14,7 @@ use std::{
     borrow::BorrowMut, sync::atomic::{AtomicU64, Ordering}, time::{Duration, Instant}
 };
 
-use control_plugin::{AppState, DeleteTraceEvent, TraceInfo, UpdateTraceEvent};
+use control_plugin::{AppState, DespawnTraceEvent, TraceInfo, UpdateTraceEvent};
 
 /// A widget that shows all metrics metadata in a tree, grouped by namespace.
 ///
@@ -58,7 +58,7 @@ impl NamespaceTreeWindow {
 
     pub(crate) fn draw_all(
         mut update_trace_event: EventWriter<UpdateTraceEvent>,
-        mut delete_trace_event: EventWriter<DeleteTraceEvent>,
+        mut delete_trace_event: EventWriter<DespawnTraceEvent>,
         mut commands: Commands,
         registry: Res<MetricsRegistry>,
         mut app_state: ResMut<AppState>,
@@ -90,7 +90,7 @@ impl NamespaceTreeWindow {
     /// Draw the widget and accept user input.
     ///
     /// If the user selects a metric, it will be returned.
-    pub fn draw(&mut self, registry: &MetricsRegistry, app_state: &mut AppState, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DeleteTraceEvent>, ui: &mut Ui) -> Option<SearchResult> {
+    pub fn draw(&mut self, registry: &MetricsRegistry, app_state: &mut AppState, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DespawnTraceEvent>, ui: &mut Ui) -> Option<SearchResult> {
         if self.force_refresh || self.last_refresh_time.elapsed() > self.refresh_period {
             self.force_refresh = false;
             let task_registry = registry.clone();
@@ -117,7 +117,7 @@ impl NamespaceTreeWindow {
         selected
     }
 
-    fn draw_recursive(nodes: &[NamespaceNode], selected_plot: &mut Option<SearchResult>, selected_trace: &mut Option<&mut TraceInfo>, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DeleteTraceEvent>, ui: &mut Ui) {
+    fn draw_recursive(nodes: &[NamespaceNode], selected_plot: &mut Option<SearchResult>, selected_trace: &mut Option<&mut TraceInfo>, update_trace_event: &mut EventWriter<UpdateTraceEvent>, delete_trace_event: &mut EventWriter<DespawnTraceEvent>, ui: &mut Ui) {
         for node in nodes {
             match node {
                 NamespaceNode::Namespace {
@@ -139,7 +139,7 @@ impl NamespaceTreeWindow {
                                     trace.add_point(path_component.to_string());
                                     update_trace_event.send(UpdateTraceEvent);
                                 } else{
-                                    delete_trace_event.send(DeleteTraceEvent(path_component.to_string()));
+                                    delete_trace_event.send(DespawnTraceEvent(path_component.to_string()));
                                 }
                             } 
                         }

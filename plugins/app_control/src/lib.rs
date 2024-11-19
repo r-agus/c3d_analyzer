@@ -31,11 +31,13 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, (represent_joins, represent_traces, delete_all_traces_event, delete_trace))
+            .add_systems(Update, represent_joins)
+            .add_systems(Update, (represent_traces_event, delete_all_traces_event, delete_trace_event, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
+            .add_event::<DespawnAllMarkersEvent>()
             .add_event::<UpdateTraceEvent>()
-            .add_event::<DeleteTraceEvent>()
-            .add_event::<DeleteAllTracesEvent>()
+            .add_event::<DespawnTraceEvent>()
+            .add_event::<DespawnAllTracesEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -93,13 +95,16 @@ pub struct TraceInfo {
 }
 
 #[derive(Event)]
+pub struct DespawnAllMarkersEvent;
+
+#[derive(Event)]
 pub struct UpdateTraceEvent;
 
 #[derive(Event)]
-pub struct DeleteTraceEvent(pub String);
+pub struct DespawnTraceEvent(pub String);
 
 #[derive(Event)]
-pub struct DeleteAllTracesEvent;
+pub struct DespawnAllTracesEvent;
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
@@ -277,7 +282,7 @@ fn spawn_marker(
 }
 
 fn load_c3d(
-    mut events: EventReader<C3dLoadedEvent>,
+    mut c3d_events: EventReader<C3dLoadedEvent>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -288,7 +293,7 @@ fn load_c3d(
     config_assets: Res<Assets<ConfigC3dAsset>>,
     query_markers: Query<(Entity, &C3dMarkers)>,
 ) {
-    if let Some(_) = events.read().last() {
+    if let Some(_) = c3d_events.read().last() {
         
         despawn_all_markers(&mut commands, &query_markers);
 
@@ -462,7 +467,7 @@ pub fn represent_joins(
     }
 }
 
-pub fn represent_traces(
+pub fn represent_traces_event(
     mut events: EventReader<UpdateTraceEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -505,8 +510,8 @@ pub fn represent_traces(
     }
 }
 
-fn delete_trace(
-    mut delete_trace_event: EventReader<DeleteTraceEvent>,
+fn delete_trace_event(
+    mut delete_trace_event: EventReader<DespawnTraceEvent>,
     mut commands: Commands,
     mut state: ResMut<AppState>,
     query_traces: Query<(Entity, &Trace)>,
@@ -524,7 +529,7 @@ fn delete_trace(
 }
 
 fn delete_all_traces_event(
-    mut delete_all_traces_event: EventReader<DeleteAllTracesEvent>,
+    mut delete_all_traces_event: EventReader<DespawnAllTracesEvent>,
     mut commands: Commands,
     mut state: ResMut<AppState>,
     query_traces: Query<Entity, With<Trace>>,
@@ -632,6 +637,16 @@ fn despawn_all_markers(
 ) {
     for (entity, _) in query_markers.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn despawn_all_markers_event(
+    mut delete_all_markers_event: EventReader<DespawnAllMarkersEvent>,
+    mut commands: Commands,
+    query_markers: Query<(Entity, &C3dMarkers)>,
+) {
+    if let Some(_) = delete_all_markers_event.read().last() {
+        despawn_all_markers(&mut commands, &query_markers);
     }
 }
 
