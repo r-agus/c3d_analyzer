@@ -144,7 +144,9 @@ impl ConfigFile {
     }
 
     pub fn get_all_config_names(&self) -> Vec<String> {
-        self.config_name.keys().cloned().collect()
+        let mut configs: Vec<String> = self.config_name.keys().cloned().collect();
+        configs.sort();
+        configs
     }
 
     pub fn get_point_group(&self, point_group_name: &str) -> Option<&Vec<String>> {
