@@ -42,6 +42,7 @@ fn _describe_graphs(
 }
 
 fn gui(
+    mut update_trace_event: EventWriter<UpdateTraceEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
@@ -86,14 +87,20 @@ fn gui(
                         );
                     });
                     ui.horizontal(|ui|{
-                        ui.label("Traces:");
                         let (start_frame, end_frame) = {
                             let traces = &mut app_state.traces;
                             (&mut traces.start_frame, &mut traces.end_frame)
                         };
+                        let start_frame_copy = *start_frame;
+                        let end_frame_copy = *end_frame;
+                        ui.label("Traces:");
                         ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
-                            .width(half_width))
-                            ;            // TODO: Set a minimun separation of 1 frame
+                            .separation_distance(1.0)
+                            .width(half_width));
+
+                        if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
+                            update_trace_event.send(UpdateTraceEvent);
+                        }
                     });
                 });
 
@@ -121,7 +128,7 @@ fn gui(
                             };
                         });
                     });
-                }
+                }                
 
                 // });
             });

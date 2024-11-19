@@ -31,8 +31,11 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, (represent_joins, represent_traces))
+            .add_systems(Update, (represent_joins, represent_traces, despawn_all_traces_event, despawn_trace))
             .add_systems(Update, (change_frame_rate, change_config))
+            .add_event::<UpdateTraceEvent>()
+            .add_event::<DeleteTraceEvent>()
+            .add_event::<DeleteAllTracesEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -89,6 +92,15 @@ pub struct TraceInfo {
     pub points: Vec<String>,
 }
 
+#[derive(Event)]
+pub struct UpdateTraceEvent;
+
+#[derive(Event)]
+pub struct DeleteTraceEvent(pub String);
+
+#[derive(Event)]
+pub struct DeleteAllTracesEvent;
+
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
 pub struct GuiSidesEnabled {
@@ -109,7 +121,7 @@ pub struct Join(String, String);
 
 #[derive(Component)]
 /// This is the trace of a point along the frames
-pub struct Trace;
+pub struct Trace(pub String);
 
 #[derive(Component)]
 /// This is a bunch of markers (parent of Marker)
@@ -145,6 +157,11 @@ impl AppState {
         self.traces.add_point(point);
         self
     }
+
+    pub fn remove_point_from_trace(&mut self, point: String) -> &mut Self {
+        self.traces.remove_point(point);
+        self
+    }
 }
 
 impl TraceInfo {
@@ -156,8 +173,19 @@ impl TraceInfo {
         }
     }
 
+    pub fn is_trace_added (
+        &self,
+        trace: String,
+    ) -> bool {
+        self.points.contains(&trace)
+    }
+
     pub fn add_point(&mut self, point: String) {
         self.points.push(point);
+    }
+
+    pub fn remove_point(&mut self, point: String) {
+        self.points.retain(|x| x != &point);
     }
 }
 
@@ -407,6 +435,7 @@ pub fn represent_joins(
 }
 
 pub fn represent_traces(
+    mut events: EventReader<UpdateTraceEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -414,36 +443,75 @@ pub fn represent_traces(
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     query_positions: Query<(&Marker, &Transform)>,
+    query_traces: Query<Entity, With<Trace>>,
 ) {
-    println!("Points: {:?}", state.traces.points.len());
-    for point in &state.traces.points {
-        println!("Point: {:?}", point);
-        let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
-        match positions {
-            Some(positions) => {
-                for position in positions {
-                    println!("Position {:?}", position);
-                    commands.spawn((
-                        PbrBundle {
-                            mesh: meshes.add(
-                                Sphere::new(0.01).mesh()
-                            ),
-                            material: materials.add(StandardMaterial {
-                                base_color: Color::srgb_u8(0, 255, 0),
+    for _ in events.read() {
+        despawn_all_traces(&mut commands, &query_traces);
+        for point in &state.traces.points {
+            let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
+            match positions {
+                Some(positions) => {
+                    for position in positions {
+                        commands.spawn((
+                            PbrBundle {
+                                mesh: meshes.add(
+                                    Sphere::new(0.005).mesh()
+                                ),
+                                material: materials.add(StandardMaterial {
+                                    base_color: Color::srgb_u8(49, 0, 69),
+                                    ..default()
+                                }),
+                                transform: Transform::from_translation(position),
+                                visibility: Visibility::Visible,
                                 ..default()
-                            }),
-                            transform: Transform::from_translation(position),
-                            visibility: Visibility::Visible,
-                            ..default()
-                        },    
-                        Trace,
-                    ));
+                            },    
+                            Trace(point.clone()),
+                        ));
+                    }
+                }
+                None => {
+                    println!("Error: Trace not found {:?}", point);
                 }
             }
-            None => {
-                println!("Error: Trace not found {:?}", point);
+        }
+    }
+}
+
+fn despawn_trace(
+    mut delete_trace_event: EventReader<DeleteTraceEvent>,
+    mut commands: Commands,
+    mut state: ResMut<AppState>,
+    query_traces: Query<(Entity, &Trace)>,
+) {
+    for delete_trace in delete_trace_event.read() {
+        for (entity, trace) in query_traces.iter() {
+            let target_trace = delete_trace.0.clone();
+            if trace.0 == target_trace {
+                commands.entity(entity).despawn_recursive();
             }
         }
+        state.remove_point_from_trace(delete_trace.0.clone());
+        println!("Trace removed: {:?}", delete_trace.0);
+    }
+}
+
+fn despawn_all_traces_event(
+    mut delete_all_traces_event: EventReader<DeleteAllTracesEvent>,
+    mut commands: Commands,
+    query_traces: Query<Entity, With<Trace>>,
+) {
+    for _ in delete_all_traces_event.read() {
+        despawn_all_traces(&mut commands, &query_traces);
+    }
+}
+
+#[inline]
+fn despawn_all_traces(
+    commands: &mut Commands,
+    query_traces: &Query<Entity, With<Trace>>,
+) {
+    for entity in query_traces.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 
