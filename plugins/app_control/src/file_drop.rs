@@ -56,11 +56,17 @@ pub fn update_c3d_path(
 
 pub fn update_configc3d_path(
     mut state: ResMut<AppState>,
-    asset_server: Res<AssetServer>,
     mut conf_state: ResMut<ConfigState>,
+    asset_server: Res<AssetServer>,
+    mut c3d_asset: ResMut<Assets<C3dAsset>>,
+    c3d_state: Res<C3dState>,
 ) {
     if state.reload_config {
         conf_state.handle = asset_server.load(state.config_path.clone());
+        let mut c3d_asset = c3d_asset.get_mut(&c3d_state.handle);
+        if let Some(c3d_asset) = c3d_asset.as_mut() {
+            c3d_asset.add_config_to_point("Test", "OBJ1");
+        }
         state.reload_config = false;
         state.reload_c3d = true;
         println!("Config file reloaded");
