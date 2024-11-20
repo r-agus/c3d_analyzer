@@ -3056,6 +3056,7 @@ dependencies = [
  "bevy_c3d_mod",
  "bevy_egui",
  "bevy_metrics_dashboard",
+ "config_plugin",
  "control_plugin",
  "egui_double_slider",
  "egui_plot",

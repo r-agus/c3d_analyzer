@@ -5,6 +5,7 @@ use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
+use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
 
@@ -47,6 +48,8 @@ fn gui(
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
+    config_state: Res<ConfigState>,
+    config_assets: Res<Assets<ConfigC3dAsset>>,
     markers_query: Query<(&Marker, &Transform)>,
 ) {
     let timeline_enabled;
@@ -128,9 +131,23 @@ fn gui(
                             });
                         }
                     });
-                    if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                        delete_all_traces_event.send(DespawnAllTracesEvent);
-                    }
+                    ui.horizontal(|ui| {
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            delete_all_traces_event.send(DespawnAllTracesEvent);
+                        }
+                        ui.menu_button("Select configuration", |ui|{
+                            ui.label("Select configuration");
+                            let config_state = config_assets.get(&config_state.handle);
+                            if let Some(config_state) = config_state {
+                                for config_name in config_state.config.get_all_config_names() {
+                                    if ui.button(config_name.clone()).clicked() {
+                                        app_state.current_config = Some(config_name.clone());
+                                        app_state.change_config = true;
+                                    }
+                                }
+                            }
+                        })
+                    });
                 });
                 // });
             });
