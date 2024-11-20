@@ -73,6 +73,17 @@ pub struct C3dAsset {
     pub c3d: C3d,
 }
 
+impl C3dAsset {
+    pub fn add_config_to_point(&mut self, config: &str, label: &str) {
+        self.c3d.points.labels.iter_mut().for_each(|l| {
+            if l == label {
+                *l = format!("{}:{}", config, l);
+            }
+        });
+    }
+    
+}
+
 /// Event that is sent when a C3D file is loaded
 #[derive(Debug, Event)]
 pub struct C3dLoadedEvent;
