@@ -36,9 +36,7 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
             .add_event::<TraceEvent>()
-            // .add_event::<UpdateTraceEvent>()
-            // .add_event::<DespawnTraceEvent>()
-            // .add_event::<DespawnAllTracesEvent>()
+            .add_event::<ReloadRegistryEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -96,16 +94,21 @@ pub struct TraceInfo {
 }
 
 #[derive(Event)]
+/// MarkerEvent contains the events related to the markers.
 pub enum MarkerEvent {
     DespawnAllMarkersEvent,
 }
 
 #[derive(Event)]
+/// TraceEvent contains the events related to the traces.
 pub enum TraceEvent {
     UpdateTraceEvent,
     DespawnTraceEvent(String),
     DespawnAllTracesEvent,
 }
+
+#[derive(Event)]
+pub struct ReloadRegistryEvent;
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.

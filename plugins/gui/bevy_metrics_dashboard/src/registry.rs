@@ -132,6 +132,10 @@ impl MetricsRegistry {
     pub(crate) fn clear_atomic_buckets_system(registry: Res<Self>) {
         registry.clear_atomic_buckets();
     }
+
+    pub fn clear_all(&mut self) {
+        self.inner = Arc::new(Inner::new());
+    }
 }
 
 fn make_search_result(

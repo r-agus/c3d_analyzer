@@ -1,5 +1,6 @@
 use crate::registry::MetricsRegistry;
-use bevy::prelude::*;
+use bevy::{ecs::event, prelude::*};
+use control_plugin::ReloadRegistryEvent;
 use metrics::set_global_recorder;
 
 /// Installs and garbage collects a [`MetricsRegistry`].
@@ -36,6 +37,16 @@ impl RegistryPlugin {
     }
 }
 
+pub fn clear_registry_system(
+    mut event: EventReader<ReloadRegistryEvent>,
+    mut registry: ResMut<MetricsRegistry>,
+) {
+    if let Some(_) = event.read().last() {
+        println!("Clearing registry");
+        registry.clear_all();
+    }
+}
+
 impl Plugin for RegistryPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         let registry = if let Some(registry) = &self.registry {
@@ -48,9 +59,10 @@ impl Plugin for RegistryPlugin {
             }
             registry
         };
-        app.insert_resource(registry).add_systems(
-            Last,
-            MetricsRegistry::clear_atomic_buckets_system.in_set(ClearBucketsSystem),
-        );
+        app.insert_resource(registry)
+            .add_systems(
+                Last,
+                MetricsRegistry::clear_atomic_buckets_system.in_set(ClearBucketsSystem))
+            .add_systems(Update, clear_registry_system);
     }
 }
