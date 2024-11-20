@@ -43,9 +43,13 @@ pub fn update_c3d_path(
     mut state: ResMut<AppState>,
     asset_server: Res<AssetServer>,
     mut c3d_state: ResMut<C3dState>,
+    mut commands: Commands,
+    query_markers: Query<(Entity, &C3dMarkers)>,
 ) {
     if state.reload_c3d {
+        despawn_all_markers(&mut commands, &query_markers);
         c3d_state.handle = asset_server.load(state.c3d_path.clone());
+        c3d_state.loaded = false;
         state.reload_c3d = false;
     }
 }
