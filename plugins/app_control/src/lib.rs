@@ -636,10 +636,11 @@ fn despawn_all_markers(
 fn despawn_all_markers_event(
     mut delete_all_markers_event: EventReader<DespawnAllMarkersEvent>,
     mut commands: Commands,
-    query_markers: Query<(Entity, &C3dMarkers)>,
+    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
 ) {
     if let Some(_) = delete_all_markers_event.read().last() {
-        despawn_all_markers(&mut commands, &query_markers);
+        println!("Despawning all markers");
+        despawn_all_markers(&mut commands, &query_c3d_markers);
     }
 }
 

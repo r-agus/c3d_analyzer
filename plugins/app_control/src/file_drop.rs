@@ -44,10 +44,10 @@ pub fn update_c3d_path(
     asset_server: Res<AssetServer>,
     mut c3d_state: ResMut<C3dState>,
     mut commands: Commands,
-    query_markers: Query<(Entity, &C3dMarkers)>,
+    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
 ) {
     if state.reload_c3d {
-        despawn_all_markers(&mut commands, &query_markers);
+        despawn_all_markers(&mut commands, &query_c3d_markers);
         c3d_state.handle = asset_server.load(state.c3d_path.clone());
         c3d_state.loaded = false;
         state.reload_c3d = false;
@@ -64,9 +64,11 @@ pub fn update_configc3d_path(
     if state.reload_config {
         conf_state.handle = asset_server.load(state.config_path.clone());
         let mut c3d_asset = c3d_asset.get_mut(&c3d_state.handle);
+        
         if let Some(c3d_asset) = c3d_asset.as_mut() {
-            c3d_asset.add_config_to_point("Test", "OBJ1");
+            // c3d_asset.add_config_to_point("Test", "OBJ1");
         }
+
         state.reload_config = false;
         state.reload_c3d = true;
         println!("Config file reloaded");
