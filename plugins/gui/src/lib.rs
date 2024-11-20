@@ -43,8 +43,7 @@ fn _describe_graphs(
 }
 
 fn gui(
-    mut update_trace_event: EventWriter<UpdateTraceEvent>,
-    mut delete_all_traces_event: EventWriter<DespawnAllTracesEvent>,
+    mut trace_event: EventWriter<TraceEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
@@ -103,7 +102,7 @@ fn gui(
                             .width(half_width));
 
                         if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
-                            update_trace_event.send(UpdateTraceEvent);
+                            trace_event.send(TraceEvent::UpdateTraceEvent);
                         }
                     });
                 });
@@ -133,7 +132,7 @@ fn gui(
                     });
                     ui.horizontal(|ui| {
                         if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            delete_all_traces_event.send(DespawnAllTracesEvent);
+                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
                         }
                         ui.menu_button("Select configuration", |ui|{
                             ui.label("Select configuration");

@@ -32,12 +32,13 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, represent_joins)
-            .add_systems(Update, (represent_traces_event, delete_all_traces_event, delete_trace_event, despawn_all_markers_event))
+            .add_systems(Update, (traces_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
-            .add_event::<DespawnAllMarkersEvent>()
-            .add_event::<UpdateTraceEvent>()
-            .add_event::<DespawnTraceEvent>()
-            .add_event::<DespawnAllTracesEvent>()
+            .add_event::<MarkerEvent>()
+            .add_event::<TraceEvent>()
+            // .add_event::<UpdateTraceEvent>()
+            // .add_event::<DespawnTraceEvent>()
+            // .add_event::<DespawnAllTracesEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -95,16 +96,16 @@ pub struct TraceInfo {
 }
 
 #[derive(Event)]
-pub struct DespawnAllMarkersEvent;
+pub enum MarkerEvent {
+    DespawnAllMarkersEvent,
+}
 
 #[derive(Event)]
-pub struct UpdateTraceEvent;
-
-#[derive(Event)]
-pub struct DespawnTraceEvent(pub String);
-
-#[derive(Event)]
-pub struct DespawnAllTracesEvent;
+pub enum TraceEvent {
+    UpdateTraceEvent,
+    DespawnTraceEvent(String),
+    DespawnAllTracesEvent,
+}
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
@@ -460,77 +461,100 @@ pub fn represent_joins(
     }
 }
 
-pub fn represent_traces_event(
-    mut events: EventReader<UpdateTraceEvent>,
+pub fn traces_event_orchestrator(
+    mut events: EventReader<TraceEvent>,
+    commands: Commands,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<StandardMaterial>>,
+    state: ResMut<AppState>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+    query_positions: Query<(&Marker, &Transform)>,
+    query_traces: Query<Entity, With<Trace>>,
+    query_tracesb: Query<(Entity, &Trace)>
+){
+    //for trace_event in events.read() {
+    if let Some(trace_event) = events.read().last() {
+        match trace_event {
+            TraceEvent::UpdateTraceEvent => {
+                represent_traces_event(commands, meshes, materials, state, c3d_state, c3d_assets, query_positions, query_traces);
+            }
+            TraceEvent::DespawnAllTracesEvent => {
+                delete_all_traces_event(commands, state, query_traces);
+            }
+            TraceEvent::DespawnTraceEvent(trace) => {
+                delete_trace_event(commands, state, query_tracesb,trace);
+            }
+        }
+    }
+}
+
+fn represent_traces_event(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    state: Res<AppState>,
+    state: ResMut<AppState>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     query_positions: Query<(&Marker, &Transform)>,
     query_traces: Query<Entity, With<Trace>>,
 ) {
-    if let Some(_) = events.read().last() {     // We just care about last event
-        despawn_all_traces(&mut commands, &query_traces);
-        for point in &state.traces.points {
-            let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
-            match positions {
-                Some(positions) => {
-                    for position in positions {
-                        commands.spawn((
-                            PbrBundle {
-                                mesh: meshes.add(
-                                    Sphere::new(0.005).mesh()
-                                ),
-                                material: materials.add(StandardMaterial {
-                                    base_color: Color::srgb_u8(49, 0, 69),
-                                    ..default()
-                                }),
-                                transform: Transform::from_translation(position),
-                                visibility: Visibility::Visible,
+    despawn_all_traces(&mut commands, &query_traces);
+    for point in &state.traces.points {
+        let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
+        match positions {
+            Some(positions) => {
+                for position in positions {
+                    commands.spawn((
+                        PbrBundle {
+                            mesh: meshes.add(
+                                Sphere::new(0.005).mesh()
+                            ),
+                            material: materials.add(StandardMaterial {
+                                base_color: Color::srgb_u8(49, 0, 69),
                                 ..default()
-                            },    
-                            Trace(point.clone()),
-                        ));
-                    }
+                            }),
+                            transform: Transform::from_translation(position),
+                            visibility: Visibility::Visible,
+                            ..default()
+                        },    
+                        Trace(point.clone()),
+                    ));
                 }
-                None => {
-                    println!("Error: Trace not found {:?}", point);
-                }
+            }
+            None => {
+                println!("Error: Trace not found {:?}", point);
             }
         }
     }
+    
 }
 
 fn delete_trace_event(
-    mut delete_trace_event: EventReader<DespawnTraceEvent>,
     mut commands: Commands,
     mut state: ResMut<AppState>,
     query_traces: Query<(Entity, &Trace)>,
+    delete_trace: &String,
 ) {
-    for delete_trace in delete_trace_event.read() {
-        for (entity, trace) in query_traces.iter() {
-            let target_trace = delete_trace.0.clone();
-            if trace.0 == target_trace {
-                commands.entity(entity).despawn_recursive();
-            }
+    
+    for (entity, trace) in query_traces.iter() {
+        let target_trace = delete_trace.clone();
+        if trace.0 == target_trace {
+            commands.entity(entity).despawn_recursive();
         }
-        state.remove_point_from_trace(delete_trace.0.clone());
-        println!("Trace removed: {:?}", delete_trace.0);
     }
+    state.remove_point_from_trace(delete_trace.clone());
+    println!("Trace removed: {:?}", delete_trace);
 }
 
 fn delete_all_traces_event(
-    mut delete_all_traces_event: EventReader<DespawnAllTracesEvent>,
     mut commands: Commands,
     mut state: ResMut<AppState>,
     query_traces: Query<Entity, With<Trace>>,
 ) {
-    if let Some(_) = delete_all_traces_event.read().last() {
-        despawn_all_traces(&mut commands, &query_traces);
-        state.traces.points.clear();
-    }
+    despawn_all_traces(&mut commands, &query_traces);
+    state.traces.points.clear();
+    
 }
 
 #[inline]
@@ -634,13 +658,18 @@ fn despawn_all_markers(
 }
 
 fn despawn_all_markers_event(
-    mut delete_all_markers_event: EventReader<DespawnAllMarkersEvent>,
+    mut delete_all_markers_event: EventReader<MarkerEvent>,
     mut commands: Commands,
     query_c3d_markers: Query<(Entity, &C3dMarkers)>,
 ) {
-    if let Some(_) = delete_all_markers_event.read().last() {
-        println!("Despawning all markers");
-        despawn_all_markers(&mut commands, &query_c3d_markers);
+    if let Some(marker_event) = delete_all_markers_event.read().last() {
+        match marker_event {
+            MarkerEvent::DespawnAllMarkersEvent => {
+                println!("Despawning all markers");
+                despawn_all_markers(&mut commands, &query_c3d_markers);
+            },
+            //_ => {},
+        }
     }
 }
 

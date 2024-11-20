@@ -65,6 +65,10 @@ impl MetricsRegistry {
         self.inner.descriptions.read().unwrap().get(key).cloned()
     }
 
+    pub fn update_all(&mut self) {
+        self.inner = Arc::new(Inner::new());
+    }
+
     /// Search the registry for metrics whose name matches `input`.
     ///
     /// Empty `input` will match everything.

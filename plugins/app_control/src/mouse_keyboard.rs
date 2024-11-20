@@ -9,7 +9,7 @@ pub fn keyboard_controls (
     mut gui_state: ResMut<GuiSidesEnabled>,
     
     
-    mut despawn_all_markers_event: EventWriter<DespawnAllMarkersEvent>,
+    mut despawn_all_markers_event: EventWriter<MarkerEvent>,
 ){
     if let Some(key) = keyboard.get_just_pressed().next() {
         match key {
@@ -33,7 +33,7 @@ pub fn keyboard_controls (
                 asset_server.reload(state.config_path.clone());
             }
             KeyCode::F12 => {
-                despawn_all_markers_event.send(DespawnAllMarkersEvent);
+                despawn_all_markers_event.send(MarkerEvent::DespawnAllMarkersEvent);
             }
             KeyCode::KeyG => {
                 gui_state.graphs = !gui_state.graphs;

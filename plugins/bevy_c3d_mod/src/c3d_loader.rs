@@ -75,6 +75,8 @@ pub struct C3dAsset {
 
 impl C3dAsset {
     pub fn add_config_to_point(&mut self, config: &str, label: &str) {
+        // self.c3d.events
+        // self.c3d.forces.force_platforms.
         self.c3d.points.labels.iter_mut().for_each(|l| {
             if l == label {
                 *l = format!("{}:{}", config, l);
