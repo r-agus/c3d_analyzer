@@ -218,7 +218,7 @@ fn spawn_marker(
     label: &str,
     current_config: &str,
     config: &Option<ConfigFile>,
-    points: Entity,
+    parent: Entity,
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -278,7 +278,7 @@ fn spawn_marker(
             ..default()
         },
         Marker(label.to_string()),
-    )).set_parent(points);
+    )).set_parent(parent);
 }
 
 fn load_c3d(
@@ -618,7 +618,6 @@ pub fn get_marker_position_on_frame_range(
                 }
                 i += 1;
             });
-            println!("There are {} positions for label {}", positions.len(), label);
             return Some(positions);
         }
         None => { return None; }
