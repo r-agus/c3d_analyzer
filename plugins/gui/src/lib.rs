@@ -5,6 +5,7 @@ use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
+use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
 
@@ -42,11 +43,12 @@ fn _describe_graphs(
 }
 
 fn gui(
-    mut update_trace_event: EventWriter<UpdateTraceEvent>,
-    mut delete_all_traces_event: EventWriter<DeleteAllTracesEvent>,
+    mut trace_event: EventWriter<TraceEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     gui_sides: ResMut<GuiSidesEnabled>,
+    config_state: Res<ConfigState>,
+    config_assets: Res<Assets<ConfigC3dAsset>>,
     markers_query: Query<(&Marker, &Transform)>,
 ) {
     let timeline_enabled;
@@ -98,12 +100,9 @@ fn gui(
                         ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
                             .separation_distance(1.0)
                             .width(half_width));
-                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            delete_all_traces_event.send(DeleteAllTracesEvent);
-                        }
 
                         if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
-                            update_trace_event.send(UpdateTraceEvent);
+                            trace_event.send(TraceEvent::UpdateTraceEvent);
                         }
                     });
                 });
@@ -112,28 +111,43 @@ fn gui(
                     ui.horizontal(|ui| {
                         ui.label("Play:");
                         ui.checkbox(&mut app_state.play, "");
+                        if app_state.render_at_fixed_frame_rate {
+                            ui.vertical(|ui| {  
+                                ui.horizontal(|ui| {                 
+                                    ui.spacing_mut().slider_width = ui.available_width() * 0.7;
+        
+                                    match app_state.frame_rate {
+                                        Some(c3d_frame_rate) => {
+                                            let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
+                                            let speed_slider;
+                                            speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
+                                            ui.add(speed_slider);
+                                            app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
+                                        },
+                                        None => {},                                
+                                    };
+                                });
+                            });
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
+                        }
+                        ui.menu_button("Select configuration", |ui|{
+                            ui.label("Select configuration");
+                            let config_state = config_assets.get(&config_state.handle);
+                            if let Some(config_state) = config_state {
+                                for config_name in config_state.config.get_all_config_names() {
+                                    if ui.button(config_name.clone()).clicked() {
+                                        app_state.current_config = Some(config_name.clone());
+                                        app_state.change_config = true;
+                                    }
+                                }
+                            }
+                        })
                     });
                 });
-
-                if app_state.render_at_fixed_frame_rate {
-                    ui.vertical(|ui| {  
-                        ui.horizontal(|ui| {                 
-                            ui.spacing_mut().slider_width = ui.available_width() * 0.7;
-
-                            match app_state.frame_rate {
-                                Some(c3d_frame_rate) => {
-                                    let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
-                                    let speed_slider;
-                                    speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
-                                    ui.add(speed_slider);
-                                    app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
-                                },
-                                None => {},                                
-                            };
-                        });
-                    });
-                }                
-
                 // });
             });
         });

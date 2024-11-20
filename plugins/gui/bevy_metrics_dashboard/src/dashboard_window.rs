@@ -155,6 +155,7 @@ impl DashboardWindow {
         let label = label.trim_end_matches("::x")
                                .trim_end_matches("::y")
                                .trim_end_matches("::z");
+
         let values = get_marker_position_on_all_frames(label, &c3d_state, &c3d_assets, &query)
             .unwrap()
             .iter()

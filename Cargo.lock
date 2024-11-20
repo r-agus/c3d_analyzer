@@ -710,6 +710,7 @@ dependencies = [
  "bevy_render",
  "bevy_utils",
  "c3dio",
+ "config_plugin",
 ]
 
 [[package]]
@@ -1081,6 +1082,7 @@ dependencies = [
  "bevy",
  "bevy_c3d_mod",
  "bevy_egui",
+ "config_plugin",
  "control_plugin",
  "egui_plot",
  "float-ord",
@@ -3054,6 +3056,7 @@ dependencies = [
  "bevy_c3d_mod",
  "bevy_egui",
  "bevy_metrics_dashboard",
+ "config_plugin",
  "control_plugin",
  "egui_double_slider",
  "egui_plot",
