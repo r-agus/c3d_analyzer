@@ -463,43 +463,41 @@ pub fn represent_joins(
 
 pub fn traces_event_orchestrator(
     mut events: EventReader<TraceEvent>,
-    commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<StandardMaterial>>,
-    state: ResMut<AppState>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut state: ResMut<AppState>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     query_positions: Query<(&Marker, &Transform)>,
-    query_traces: Query<Entity, With<Trace>>,
-    query_tracesb: Query<(Entity, &Trace)>
+    query_delete_trace: Query<(Entity, &Trace)>
 ){
     //for trace_event in events.read() {
     if let Some(trace_event) = events.read().last() {
         match trace_event {
             TraceEvent::UpdateTraceEvent => {
-                represent_traces_event(commands, meshes, materials, state, c3d_state, c3d_assets, query_positions, query_traces);
+                despawn_all_traces(&mut commands, query_delete_trace);
+                represent_traces_event(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
             }
             TraceEvent::DespawnAllTracesEvent => {
-                delete_all_traces_event(commands, state, query_traces);
+                delete_all_traces_event(&mut commands, &mut state, query_delete_trace);
             }
             TraceEvent::DespawnTraceEvent(trace) => {
-                delete_trace_event(commands, state, query_tracesb,trace);
+                delete_trace_event(&mut commands, state, query_delete_trace,trace);
             }
         }
     }
 }
 
 fn represent_traces_event(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    state: ResMut<AppState>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-    query_positions: Query<(&Marker, &Transform)>,
-    query_traces: Query<Entity, With<Trace>>,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    state: &ResMut<AppState>,
+    c3d_state: &Res<C3dState>,
+    c3d_assets: &Res<Assets<C3dAsset>>,
+    query_positions: &Query<(&Marker, &Transform)>,
 ) {
-    despawn_all_traces(&mut commands, &query_traces);
     for point in &state.traces.points {
         let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
         match positions {
@@ -531,7 +529,7 @@ fn represent_traces_event(
 }
 
 fn delete_trace_event(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut state: ResMut<AppState>,
     query_traces: Query<(Entity, &Trace)>,
     delete_trace: &String,
@@ -548,21 +546,22 @@ fn delete_trace_event(
 }
 
 fn delete_all_traces_event(
-    mut commands: Commands,
-    mut state: ResMut<AppState>,
-    query_traces: Query<Entity, With<Trace>>,
+    commands: &mut Commands,
+    state: &mut ResMut<AppState>,
+    query_traces: Query<(Entity, &Trace)>
 ) {
-    despawn_all_traces(&mut commands, &query_traces);
-    state.traces.points.clear();
-    
+    for (entity, _) in query_traces.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    state.traces.points.clear();   
 }
 
 #[inline]
 fn despawn_all_traces(
     commands: &mut Commands,
-    query_traces: &Query<Entity, With<Trace>>,
+    query_traces: Query<(Entity, &Trace)>,
 ) {
-    for entity in query_traces.iter() {
+    for (entity, _) in query_traces.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
