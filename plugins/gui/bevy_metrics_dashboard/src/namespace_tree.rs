@@ -41,7 +41,7 @@ impl NamespaceTreeWindow {
             title,
             id,
             force_refresh: true,
-            refresh_period: Duration::from_secs(5),
+            refresh_period: Duration::from_millis(500),
             last_refresh_time: Instant::now(),
             refresh_task: Default::default(),
             roots: Default::default(),
@@ -54,6 +54,11 @@ impl NamespaceTreeWindow {
 
     pub fn set_refresh_period(&mut self, period: Duration) {
         self.refresh_period = period;
+    }
+
+    pub fn restart_everything(&mut self) {
+        self.roots.clear();
+        self.refresh_task = None;
     }
 
     pub(crate) fn draw_all(
