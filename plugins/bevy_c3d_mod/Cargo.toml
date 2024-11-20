@@ -25,6 +25,8 @@ bevy_scene = { version = "^0.14", optional = true}
 bevy_pbr = { version = "^0.14", optional = true}
 c3dio = "0.8"
 
+config_plugin = { path = "../c3d_config" }
+
 [dev-dependencies]
 bevy = "^0.14"
 

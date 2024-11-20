@@ -710,6 +710,7 @@ dependencies = [
  "bevy_render",
  "bevy_utils",
  "c3dio",
+ "config_plugin",
 ]
 
 [[package]]
