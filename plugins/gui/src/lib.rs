@@ -98,9 +98,6 @@ fn gui(
                         ui.add(DoubleSlider::new(start_frame, end_frame, 0.0..=(num_frames - 1) as f32)
                             .separation_distance(1.0)
                             .width(half_width));
-                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            delete_all_traces_event.send(DespawnAllTracesEvent);
-                        }
 
                         if start_frame_copy as usize != *start_frame as usize || end_frame_copy as usize != *end_frame as usize {
                             update_trace_event.send(UpdateTraceEvent);
@@ -112,28 +109,29 @@ fn gui(
                     ui.horizontal(|ui| {
                         ui.label("Play:");
                         ui.checkbox(&mut app_state.play, "");
+                        if app_state.render_at_fixed_frame_rate {
+                            ui.vertical(|ui| {  
+                                ui.horizontal(|ui| {                 
+                                    ui.spacing_mut().slider_width = ui.available_width() * 0.7;
+        
+                                    match app_state.frame_rate {
+                                        Some(c3d_frame_rate) => {
+                                            let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
+                                            let speed_slider;
+                                            speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
+                                            ui.add(speed_slider);
+                                            app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
+                                        },
+                                        None => {},                                
+                                    };
+                                });
+                            });
+                        }
                     });
+                    if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                        delete_all_traces_event.send(DespawnAllTracesEvent);
+                    }
                 });
-
-                if app_state.render_at_fixed_frame_rate {
-                    ui.vertical(|ui| {  
-                        ui.horizontal(|ui| {                 
-                            ui.spacing_mut().slider_width = ui.available_width() * 0.7;
-
-                            match app_state.frame_rate {
-                                Some(c3d_frame_rate) => {
-                                    let mut speed = if let Some(fixed_frame_rate) = app_state.fixed_frame_rate {fixed_frame_rate / c3d_frame_rate as f64} else {1.0};
-                                    let speed_slider;
-                                    speed_slider = egui::Slider::new(&mut speed, 0.1..=2.).fixed_decimals(1);
-                                    ui.add(speed_slider);
-                                    app_state.fixed_frame_rate = Some(c3d_frame_rate as f64 * speed);
-                                },
-                                None => {},                                
-                            };
-                        });
-                    });
-                }                
-
                 // });
             });
         });
