@@ -108,11 +108,7 @@ impl MetricsRegistry {
             results.push(make_search_result(MetricKind::Gauge, key, &descriptions));
         });
         reg.visit_histograms(|key, _| {
-            results.push(make_search_result(
-                MetricKind::Histogram,
-                key,
-                &descriptions,
-            ));
+            results.push(make_search_result(MetricKind::Histogram, key, &descriptions));
         });
         results
     }
