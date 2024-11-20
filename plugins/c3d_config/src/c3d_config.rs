@@ -254,7 +254,7 @@ impl ConfigFile {
     )]
     pub fn contains_point(&self, config: &str, label: &str) -> bool {
         match self.config_name.get(config) {
-            Some(config) => config.contains_point(label),
+            Some(config) => config.contains_point_regex(label), //config.contains_point(label),
             None => false,
         }
     }
