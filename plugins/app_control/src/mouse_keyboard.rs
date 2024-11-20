@@ -7,6 +7,9 @@ pub fn keyboard_controls (
     config_assets: Res<Assets<ConfigC3dAsset>>,
     mut state: ResMut<AppState>,
     mut gui_state: ResMut<GuiSidesEnabled>,
+    
+    
+    mut despawn_all_markers_event: EventWriter<DespawnAllMarkersEvent>,
 ){
     if let Some(key) = keyboard.get_just_pressed().next() {
         match key {
@@ -28,6 +31,9 @@ pub fn keyboard_controls (
                 println!("Reloading assets");
                 asset_server.reload(state.c3d_path.clone());
                 asset_server.reload(state.config_path.clone());
+            }
+            KeyCode::F12 => {
+                despawn_all_markers_event.send(DespawnAllMarkersEvent);
             }
             KeyCode::KeyG => {
                 gui_state.graphs = !gui_state.graphs;
