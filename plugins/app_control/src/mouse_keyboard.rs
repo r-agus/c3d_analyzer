@@ -2,6 +2,7 @@ use crate::*;
 
 pub fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
+    asset_server: Res<AssetServer>,
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
     mut state: ResMut<AppState>,
@@ -22,6 +23,11 @@ pub fn keyboard_controls (
             }
             KeyCode::Escape => {
                 // TODO: Implement a way to stop the program    
+            }
+            KeyCode::F5 => {
+                println!("Reloading assets");
+                asset_server.reload(state.c3d_path.clone());
+                asset_server.reload(state.config_path.clone());
             }
             KeyCode::KeyG => {
                 gui_state.graphs = !gui_state.graphs;
