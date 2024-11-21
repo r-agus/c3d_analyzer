@@ -1,5 +1,5 @@
 use crate::registry::MetricsRegistry;
-use bevy::{ecs::event, prelude::*};
+use bevy::prelude::*;
 use control_plugin::ReloadRegistryEvent;
 use metrics::set_global_recorder;
 
