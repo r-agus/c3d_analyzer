@@ -1,0 +1,39 @@
+name: CI Pipeline
+
+on:
+  push:
+    paths:
+      - '**/*.rs'
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Set up Rust toolchain
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: clippy, rustfmt
+
+    # Install dependencies
+    - name: Install dependencies
+      run: cargo fetch
+
+    # Run clippy to lint code
+    - name: Run clippy
+      run: cargo clippy -- -D warnings
+
+    # Run tests
+    - name: Run tests
+      run: cargo test --verbose
+
+    # Check formatting
+    - name: Check formatting
+      run: cargo fmt -- --check
