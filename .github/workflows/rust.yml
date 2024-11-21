@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install dependencies
+    - name: Install Linux dependencies 
       run: sudo apt-get update && sudo apt-get install gcc pkg-config libasound2-dev libudev-dev
 
     - name: Build
