@@ -19,8 +19,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 on
+    - name: Install Linux dependencies
+      shell: bash
+      if: ${{ runner.os == 'linux' }}
+      run: >
+        sudo apt-get update
+
+        sudo apt-get install --no-install-recommends
+        'libasound2-dev'
+        'libudev-dev'
 
     - name: Build
       run: cargo build --verbose
