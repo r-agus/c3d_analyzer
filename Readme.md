@@ -1,5 +1,9 @@
 # Swing 3D
 
+## Licencia
+Este proyecto está protegido por derechos de autor. No está permitido usar, copiar, modificar o distribuir este software sin autorización previa por escrito del autor.
+
+
 ## ¿Qué es?
 
 Swing 3D es un proyecto de la Universidad Politécnica de Madrid, pensado originalmente por la Facultad de Ciencias de la Actividad Física y el Deporte - INEF, y llevado a cabo por la Escuela Técnica Superior de Ingenieros de Telecomunicación, concretamente por el grupo de investigación GAMMA. 
