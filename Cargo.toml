@@ -1,9 +1,9 @@
 [package]
 name = "proyecto_swing"
 version = "0.1.0"
+authors = ["Rubén Agustín <r.agussglz@gmail.com>"]
 edition = "2021"
 
-license = "proprietary"
 license-file = "LICENSE.txt"
 
 [dependencies]
