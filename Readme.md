@@ -40,9 +40,13 @@ Bevy tiene el contraparte de estar aún en desarrollo, por lo que sus versiones 
 - [ ] Editar ficheros C3D
 - [ ] Editar ficheros de configuración
 - [x] Representar el fichero C3D
+- [x] Crear un avatar personalizable por el usuario
+- [ ] Representar vectores de fuerzas en el entorno 3D
 - [x] Añadir controles de tiempo sobre un C3D (_play/pause_ y control del _frame_ )
 - [x] Añadir un eje de tiempo
 - [x] Añadir una escena 3D y una cámara
 - [ ] Posibilidad de cambiar la escena en _runtime_
-- [ ] Calcular y representar datos biomecánicos
+- [x] Calcular y representar datos biomecánicos en gráficas 2D
+- [ ] Calcular y representar datos biomecánicos en el entorno 3D
+
 
