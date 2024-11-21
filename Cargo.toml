@@ -3,6 +3,9 @@ name = "proyecto_swing"
 version = "0.1.0"
 edition = "2021"
 
+license = "proprietary"
+license-file = "LICENSE.txt"
+
 [dependencies]
 bevy = "0.14.2"
 bevy_panorbit_camera = { version = "0.19.5", features = ["bevy_egui"] }
