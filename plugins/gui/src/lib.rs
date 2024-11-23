@@ -1,6 +1,10 @@
+mod milestones;
+
+use std::ops::Deref;
+
 use bevy::prelude::*;
 
-use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
+use bevy_egui::{egui::{self, Sense}, EguiContexts, EguiPlugin};
 
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
@@ -8,6 +12,7 @@ use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, 
 use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
+use milestones::{update_milestone_board, Milestones};
 
 pub struct GUIPlugin;
 
@@ -16,18 +21,21 @@ impl Plugin for GUIPlugin {
         app.add_plugins(EguiPlugin)
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
-            .add_systems(Startup, create_dashboard)
+            .add_systems(Startup, (create_dashboard))
             .add_systems(Update,
                     (gui, 
                     DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
-                    ).chain());
+                    ).chain())
+            .init_resource::<Milestones>();
     }
 }
 
 fn create_dashboard(
     mut commands: Commands,
+    mut milestones: ResMut<Milestones>,
 ) {
     commands.spawn(DashboardWindow::new("Graphs"));
+    milestones.default();
 }
 
 fn _describe_graphs(
@@ -46,6 +54,7 @@ fn gui(
     mut trace_event: EventWriter<TraceEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
+    mut milestones: ResMut<Milestones>,
     gui_sides: ResMut<GuiSidesEnabled>,
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
@@ -82,6 +91,7 @@ fn gui(
                             .on_hover_text(path);
                     });
                 });
+
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         ui.label("Frame:");
@@ -89,6 +99,10 @@ fn gui(
                             .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
                         );
                     });
+                    
+                    let milestones = milestones.as_mut();
+                    update_milestone_board(milestones, num_frames, ui);
+
                     ui.horizontal(|ui|{
                         let (start_frame, end_frame) = {
                             let traces = &mut app_state.traces;
@@ -109,8 +123,6 @@ fn gui(
 
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Play:");
-                        ui.checkbox(&mut app_state.play, "");
                         if app_state.render_at_fixed_frame_rate {
                             ui.vertical(|ui| {  
                                 ui.horizontal(|ui| {                 
@@ -128,8 +140,20 @@ fn gui(
                                     };
                                 });
                             });
+                        } else {
+                            ui.allocate_exact_size([1.0, ui.spacing().slider_rail_height].into(), Sense::hover());
                         }
                     });
+                    let play_pause_button = if app_state.play 
+                            {
+                                ui.button("⏸").on_hover_text("Pause")
+                            } else {
+                                ui.button("▶").on_hover_text("Play")
+                            };
+                        if play_pause_button.clicked() {
+                            app_state.play = !app_state.play;
+                        }
+
                     ui.horizontal(|ui| {
                         if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
                             trace_event.send(TraceEvent::DespawnAllTracesEvent);
