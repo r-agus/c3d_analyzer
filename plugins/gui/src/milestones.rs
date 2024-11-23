@@ -34,7 +34,7 @@ impl Milestones {
         self.add_milestone(frame, MilestoneType::UserGenerated);
     }
     
-    pub(crate) fn add_from_c3d(&mut self, frame: usize) {
+    pub fn add_from_c3d(&mut self, frame: usize) {
         self.add_milestone(frame, MilestoneType::FromC3d);
     }
 
