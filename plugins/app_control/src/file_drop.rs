@@ -65,7 +65,7 @@ pub fn update_configc3d_path(
         conf_state.handle = asset_server.load(state.config_path.clone());
         let mut c3d_asset = c3d_asset.get_mut(&c3d_state.handle);
         
-        if let Some(c3d_asset) = c3d_asset.as_mut() {
+        if let Some(_c3d_asset) = c3d_asset.as_mut() {
             // c3d_asset.add_config_to_point("Test", "OBJ1");
         }
 
