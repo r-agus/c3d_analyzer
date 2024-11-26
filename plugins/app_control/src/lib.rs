@@ -36,6 +36,7 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
             .add_event::<TraceEvent>()
+            .add_event::<MilestoneEvent>()
             .add_event::<ReloadRegistryEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
@@ -105,6 +106,14 @@ pub enum TraceEvent {
     UpdateTraceEvent,
     DespawnTraceEvent(String),
     DespawnAllTracesEvent,
+}
+
+#[derive(Event)]
+/// MilestoneEvent contains the events related to the milestones.
+pub enum MilestoneEvent {
+    AddMilestoneEvent(usize),
+    RemoveMilestoneEvent(usize),
+    RemoveAllMilestonesEvent,
 }
 
 #[derive(Event)]
@@ -374,6 +383,11 @@ fn load_c3d(
                         }});
                     });
                 }
+
+                // Send milestones to the GUI
+                for milestone in asset.c3d.events.iter() {
+                    println!("Milestone: {:?}", milestone);
+                } 
 
                 println!("C3D loaded");
             }
