@@ -10,6 +10,11 @@ Swing 3D es un proyecto de la Universidad Politécnica de Madrid, pensado origin
 
 El objetivo de este proyecto es poder representar y analizar los movimientos grabados con cámaras Vicon en sistemas tridimensionales. Esta orientado a un público especializado en deporte — originalmente golf — que no tiene por qué tener conocimientos técnicos.
 
+## Demo
+
+![image](https://github.com/user-attachments/assets/cc15e3f3-833a-4590-b7d0-7eaa59e1e46d)
+
+
 ## Especificaciones técnicas
 
 ### Rust
