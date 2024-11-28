@@ -10,6 +10,7 @@ use toml::{Value, map::Map};
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
+    vectors: Option<HashMap<String, String>>, // Map of point that fixes the vector and the vector name
     point_color: Option<Vec<u8>>,
     join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
@@ -21,6 +22,7 @@ impl Config {
         Config {
             visible_points: None,
             joins: None,
+            vectors: None,
             point_color: None,
             join_color: None,
             line_thickness: None,
@@ -32,6 +34,9 @@ impl Config {
     }
     pub fn get_joins(&self) -> Option<&Vec<Vec<String>>> {
         self.joins.as_ref()
+    }
+    pub fn get_vectors(&self) -> Option<&HashMap<String, String>> {
+        self.vectors.as_ref()
     }
     pub fn add_visible_point(&mut self, point: String) {
         if let Some(visible_points) = &mut self.visible_points {
@@ -306,6 +311,7 @@ pub fn merge_configs(base: &Config, override_config: &PointGroupConfig) -> Confi
         point_size: override_config.point_size.or(base.point_size),
         visible_points: base.visible_points.clone(),
         joins: base.joins.clone(),
+        vectors: base.vectors.clone(),
     }
 }
 
@@ -321,24 +327,20 @@ pub fn parse_config(file_or_string: &str, from_file: bool) -> Result<ConfigFile,
 
     // Caution: The order of the keys in the config file is not guaranteed, because it is a hashmap.
     // We need to parse the point groups first, as they are used in the individual configs. 
-    for (key, value) in config.iter() {
-        if key == "point_groups" {
-            if let Value::Table(groups) = value {
-                for (group_name, group_value) in groups {
-                    if let Value::Array(points) = group_value {
-                        let points_vec: Vec<String> = points
-                            .iter()
-                            .filter_map(|v| match v {
-                                Value::String(s) => Some(s.to_string()),
-                                _ => None,
-                            })
-                            .collect();
-                        config_file.add_point_group(group_name.clone(), points_vec);
-                    }
-                }
+    config.get("point_groups").and_then(|v| v.as_table()).map(|groups| {
+        for (group_name, group_value) in groups {
+            if let Value::Array(points) = group_value {
+                let points_vec: Vec<String> = points
+                    .iter()
+                    .filter_map(|v| match v {
+                        Value::String(s) => Some(s.to_string()),
+                        _ => None,
+                    })
+                    .collect();
+                config_file.add_point_group(group_name.clone(), points_vec);
             }
         }
-    }
+    });
 
     for (key, value) in config {
         match key.as_str() {
@@ -431,6 +433,22 @@ fn parse_individual_config(
                 }
             }
         }
+    }
+
+    if let Some(Value::Array(vectors)) = table.get("vectors") {
+        let mut vector_map = HashMap::new();
+        for vector in vectors {
+            if let Value::Array(vector_pair) = vector {
+                if vector_pair.len() == 2 {
+                    if let Value::String(point) = vector_pair.get(0).unwrap() {
+                        if let Value::String(vector_name) = vector_pair.get(1).unwrap() {
+                            vector_map.insert(point.clone(), vector_name.clone());
+                        }
+                    }
+                }
+            }
+        }
+        config.vectors = Some(vector_map);
     }
 
     config.point_color = table.get("point_color").and_then(|v| v.as_array()).and_then(|v| {

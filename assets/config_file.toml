@@ -54,7 +54,12 @@
         [["lleg"]],
         [["rleg"]],
         [["objects"]]
-]
+    ]
+
+    vectors = [
+        ["LUPA1", "LUPA2"],
+        ["RUPA1", "RUPA2"]
+    ]
 
 
 [solo_objetos]
@@ -64,6 +69,11 @@
         [["objects"]]
     ]
 
+    vectors = [
+        ["LUPA1", "LUPA2"],
+        ["RUPA1", "RUPA2"]
+    ]
+    
     point_color = [255, 0, 0]
     join_color = [255, 195, 0]
     line_thickness = 2.0
