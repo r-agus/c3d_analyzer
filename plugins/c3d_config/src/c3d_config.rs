@@ -10,7 +10,7 @@ use toml::{Value, map::Map};
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<Vec<String>>>,
-    vectors: Option<HashMap<String, String>>, // Map of point that fixes the vector and the vector name
+    vectors: Option<HashMap<String, (String, f64)>>, // Map where the key is the point and the value is the vector name and the scale
     point_color: Option<Vec<u8>>,
     join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
@@ -35,7 +35,7 @@ impl Config {
     pub fn get_joins(&self) -> Option<&Vec<Vec<String>>> {
         self.joins.as_ref()
     }
-    pub fn get_vectors(&self) -> Option<&HashMap<String, String>> {
+    pub fn get_vectors(&self) -> Option<&HashMap<String, (String, f64)>> {
         self.vectors.as_ref()
     }
     pub fn add_visible_point(&mut self, point: String) {
@@ -442,7 +442,15 @@ fn parse_individual_config(
                 if vector_pair.len() == 2 {
                     if let Value::String(point) = vector_pair.get(0).unwrap() {
                         if let Value::String(vector_name) = vector_pair.get(1).unwrap() {
-                            vector_map.insert(point.clone(), vector_name.clone());
+                            vector_map.insert(point.clone(), (vector_name.clone(), 1.0));
+                        }
+                    }
+                } else if vector_pair.len() == 3 {
+                    if let Value::String(point) = vector_pair.get(0).unwrap() {
+                        if let Value::String(vector_name) = vector_pair.get(1).unwrap() {
+                            if let Value::Float(scale) = vector_pair.get(2).unwrap() {
+                                vector_map.insert(point.clone(), (vector_name.clone(), scale.clone()));
+                            }
                         }
                     }
                 }
