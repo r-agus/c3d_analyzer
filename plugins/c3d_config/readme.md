@@ -16,6 +16,7 @@ Este formato es un estándar, por eso se implementa. Tendrá las siguientes "Key
         Cada punto se define por su **etiqueta** del marcador, o su **índice** en el c3d.
 
     - **Campos opcionales:** Para personalizar el estilo. Se aplica a toda la configuración excepto que se defina una regla de orden mayor.
+        - **vectors:** es un array de arrays, donde cada sub\_array representa un vector. Cada sub\_array debe tener 1 punto "ancla" y un vector.
         - **point_color:** color de los puntos
         - **join_color:** color de la unión
         - **line_thickness:** grosor de la unión

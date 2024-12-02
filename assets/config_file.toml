@@ -54,7 +54,11 @@
         [["lleg"]],
         [["rleg"]],
         [["objects"]]
-]
+    ]
+
+    vectors = [
+        ["OBJ1", "LVelOBJ1"]
+    ]
 
 
 [solo_objetos]
@@ -64,6 +68,10 @@
         [["objects"]]
     ]
 
+    vectors = [
+        ["OBJ1", "LVelOBJ1", 1.5]
+    ]
+    
     point_color = [255, 0, 0]
     join_color = [255, 195, 0]
     line_thickness = 2.0
