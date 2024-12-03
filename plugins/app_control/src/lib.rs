@@ -31,11 +31,12 @@ impl Plugin for ControlPlugin {
             .add_systems(FixedUpdate, (represent_points)
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
-            .add_systems(Update, represent_joins)
+            .add_systems(Update, (represent_joins, represent_vectors))
             .add_systems(Update, (traces_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
             .add_event::<TraceEvent>()
+            .add_event::<MilestoneEvent>()
             .add_event::<ReloadRegistryEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
@@ -108,6 +109,14 @@ pub enum TraceEvent {
 }
 
 #[derive(Event)]
+/// MilestoneEvent contains the events related to the milestones.
+pub enum MilestoneEvent {
+    AddMilestoneFromC3dEvent(usize),
+    RemoveMilestoneEvent(usize),
+    RemoveAllMilestonesEvent,
+}
+
+#[derive(Event)]
 pub struct ReloadRegistryEvent;
 
 #[derive(Resource, Default, Debug)]
@@ -127,6 +136,10 @@ pub struct Marker(pub String);
 #[derive(Component)]
 /// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
 pub struct Join(String, String);
+
+#[derive(Component)]
+/// This represents a vector. It contains the labels of the points that are joined. First point is the origin, second point is the vector, third parameter is the scale.
+pub struct Vector(Marker, Marker, f64);
 
 #[derive(Component)]
 /// This is the trace of a point along the frames
@@ -285,8 +298,41 @@ fn spawn_marker(
     )).set_parent(parent);
 }
 
+fn spawn_vectors_in_config(
+    current_config: &str,
+    config_file: &ConfigFile,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+){
+    if config_file.get_config(current_config).is_some(){
+        if let Some(vectors) = config_file.get_config(current_config).unwrap().get_vectors(){
+            for (point, vector) in vectors {
+                commands.spawn((
+                    PbrBundle {
+                        mesh: meshes.add(
+                        Cylinder::new(
+                            0.01,
+                            1.0 * vector.1 as f32,
+                        )
+                    ),
+                    material: materials.add(StandardMaterial {
+                        base_color: Color::srgb_u8(255, 220, 0),
+                        ..default()
+                    }),
+                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                    visibility: Visibility::Visible,
+                    ..default()
+                }, Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));   
+            }
+        }
+    }
+}
+
+
 fn load_c3d(
     mut c3d_events: EventReader<C3dLoadedEvent>,
+    mut milestones_events: EventWriter<MilestoneEvent>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -374,6 +420,11 @@ fn load_c3d(
                         }});
                     });
                 }
+
+                // Send milestones to the GUI
+                for milestone in asset.c3d.events.iter() {
+                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent((milestone.time * app_state.frame_rate.unwrap_or(1.0)) as usize));
+                } 
 
                 println!("C3D loaded");
             }
@@ -464,6 +515,41 @@ pub fn represent_joins(
     }
 }
 
+pub fn represent_vectors(
+    markers_query: Query<(&Marker, &Transform)>,
+    mut vectors_query: Query<(&Vector, &mut Transform), Without<Marker>>,
+    c3d_state: Res<C3dState>,
+    c3d_assets: Res<Assets<C3dAsset>>,
+){
+    let asset = c3d_assets.get(&c3d_state.handle);
+
+    match asset {
+        Some(_asset) => {
+            for (vector, mut transform) in vectors_query.iter_mut() {
+                let marker1 = get_marker_position_on_frame(&vector.0.0, &markers_query);
+                let marker2 = get_marker_position_on_frame(&vector.1.0, &markers_query);
+                match (marker1, marker2) {
+                    (Some(marker1), Some(marker2)) => {
+                        let length = 50.0 * marker2.length() * vector.2 as f32;
+                        let direction = marker2.normalize_or_zero();
+                        let position = marker1 + direction * length / 2.0;
+                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
+                        let scale = Vec3::new(1.0, length/vector.2 as f32, 1.0);
+                        transform.translation = position;
+                        transform.rotation = rotation;
+                        transform.scale = scale;
+                    }
+                    _ => {
+
+                    }
+                }
+            }      
+        },
+        None => {}
+    }
+}
+
+/// Orchestrates the events related to the markers
 pub fn traces_event_orchestrator(
     mut events: EventReader<TraceEvent>,
     mut commands: Commands,
@@ -675,12 +761,26 @@ fn despawn_all_markers_event(
     }
 }
 
+fn despawn_all_vectors(
+    commands: &mut Commands,
+    query_vectors: &Query<(Entity, &Vector)>,
+) {
+    for (entity, _) in query_vectors.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 /// Change the configuration of the c3d file. This can be used to change the representation of the c3d file.
 fn change_config(
     mut state: ResMut<AppState>,
     mut commands: Commands,
     query_joins: Query<(Entity, &Join)>,
+    query_vectors: Query<(Entity, &Vector)>,
     mut ev_loaded: EventWriter<C3dLoadedEvent>,
+    config_state: Res<ConfigState>,
+    config_assets: Res<Assets<ConfigC3dAsset>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if !state.change_config{
         return;
@@ -692,6 +792,14 @@ fn change_config(
         commands.entity(entity).despawn_recursive();
     }
 
-    // Then we load the new configuration. Just need to call load_c3d again.
+    // Load the new configuration. Just need to call load_c3d again. Will be taken into account in the next frame.
     ev_loaded.send(C3dLoadedEvent);
+
+    // Despawn old vectors and spawn new vectors
+    despawn_all_vectors(&mut commands, &query_vectors);
+    if let Some(config) = config_assets.get(&config_state.handle){
+        if let Some(current_config_name) = state.current_config.as_deref() {
+            spawn_vectors_in_config(current_config_name, &config.config, &mut commands, &mut meshes, &mut materials);   
+        }
+    }
 }

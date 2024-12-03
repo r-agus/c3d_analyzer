@@ -1,6 +1,8 @@
+mod milestones;
+
 use bevy::prelude::*;
 
-use bevy_egui::{egui::{self}, EguiContexts, EguiPlugin};
+use bevy_egui::{egui::{self, Sense}, EguiContexts, EguiPlugin};
 
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
@@ -8,6 +10,7 @@ use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, 
 use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
+use milestones::{milestones_event_orchestrator, update_milestone_board, Milestones};
 
 pub struct GUIPlugin;
 
@@ -16,18 +19,22 @@ impl Plugin for GUIPlugin {
         app.add_plugins(EguiPlugin)
             .add_plugins(RegistryPlugin::default())
             .add_plugins(DashboardPlugin)
-            .add_systems(Startup, create_dashboard)
+            .add_systems(Startup, setup)
             .add_systems(Update,
                     (gui, 
                     DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
-                    ).chain());
+                    ).chain())
+            .add_systems(Update, milestones_event_orchestrator)
+            .init_resource::<Milestones>();
     }
 }
 
-fn create_dashboard(
+fn setup(
     mut commands: Commands,
+    mut milestones: ResMut<Milestones>,
 ) {
     commands.spawn(DashboardWindow::new("Graphs"));
+    milestones.default();
 }
 
 fn _describe_graphs(
@@ -46,6 +53,7 @@ fn gui(
     mut trace_event: EventWriter<TraceEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
+    mut milestones: ResMut<Milestones>,
     gui_sides: ResMut<GuiSidesEnabled>,
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
@@ -55,7 +63,8 @@ fn gui(
     {
         timeline_enabled = gui_sides.timeline;
     }
-    let mut frame  = app_state.frame;
+    let mut slider_frame  = app_state.frame;
+    let mut milestone_frame = app_state.frame;
     let mut path = app_state.c3d_path.clone();
     let num_frames = match app_state.num_frames {
         0 => 1,
@@ -65,8 +74,9 @@ fn gui(
     // Timeline
     if timeline_enabled {
         egui::TopBottomPanel::bottom("Timeline").show(egui_context.ctx_mut(), |ui| {
-            let frame_slider = egui::Slider::new(&mut frame, 0..=(num_frames - 1)).show_value(true);
+            let frame_slider = egui::Slider::new(&mut slider_frame, 0..=(num_frames - 1)).show_value(false);
             let half_width = ui.available_width() * 0.5; 
+            let mut slider_width = 0.0;
 
             ui.spacing_mut().slider_width = half_width;
             ui.spacing_mut().text_edit_width = half_width * 0.35;
@@ -82,13 +92,19 @@ fn gui(
                             .on_hover_text(path);
                     });
                 });
+
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         ui.label("Frame:");
-                        ui.add(frame_slider
+                        let frame_slider_resp = ui.add(frame_slider
                             .handle_shape(egui::style::HandleShape::Rect{ aspect_ratio: 0.1 })
                         );
+                        slider_width = frame_slider_resp.rect.width();
                     });
+                    
+                    let milestones = milestones.as_mut();
+                    update_milestone_board(milestones, slider_width, num_frames, ui);
+
                     ui.horizontal(|ui|{
                         let (start_frame, end_frame) = {
                             let traces = &mut app_state.traces;
@@ -108,9 +124,8 @@ fn gui(
                 });
 
                 ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Play:");
-                        ui.checkbox(&mut app_state.play, "");
+                    ui.horizontal(|ui| { // TODO: Align this to the right
+                        ui.label(app_state.frame.to_string());
                         if app_state.render_at_fixed_frame_rate {
                             ui.vertical(|ui| {  
                                 ui.horizontal(|ui| {                 
@@ -128,8 +143,57 @@ fn gui(
                                     };
                                 });
                             });
+                        } else {
+                            ui.allocate_exact_size([1.0, ui.spacing().slider_rail_height].into(), Sense::hover());
                         }
                     });
+                    ui.horizontal(|ui| {
+                        // ⏮⏪⏩⏭
+                        let prev_milestone_button = ui.button("|◀").on_hover_text("Previous milestone");
+                        let add_milestone_button = ui.button("🔹").on_hover_text("Add milestone");
+                        let play_pause_button = if app_state.play 
+                            {
+                                ui.button("⏸").on_hover_text("Pause")
+                            } else {
+                                ui.button("▶").on_hover_text("Play")
+                            };
+                        let next_milestone_button = ui.button("▶|").on_hover_text("Next milestone");
+                        ui.menu_button("Remove milestones", |ui| {
+                            ui.label("Remove milestones");
+                            let mut frames_to_remove = Vec::new();
+                            for frame in milestones.get_milestones() {
+                                if ui.button(format!("Frame {}", frame)).clicked() {
+                                    frames_to_remove.push(*frame);
+                                }
+                            }
+                            for frame in frames_to_remove {
+                                milestones.remove_milestone(frame);
+                            }
+                        });
+                        let remove_all_milestones = ui.button("🔄").on_hover_text("Reset milestones");
+                        if prev_milestone_button.clicked() {
+                            let prev = milestones.get_prev_milestone(app_state.frame);
+                            milestone_frame = prev;
+                        }
+                        if next_milestone_button.clicked() {
+                            let next = milestones.get_next_milestone(app_state.frame);
+                            if next != 0 {
+                                milestone_frame = next;
+                            } else {
+                                milestone_frame = num_frames - 2;
+                            }
+                        }
+                        if add_milestone_button.clicked() {
+                            milestones.add_user_generated(app_state.frame);
+                        }
+                        if play_pause_button.clicked() {
+                            app_state.play = !app_state.play;
+                        }
+                        if remove_all_milestones.clicked() {
+                            milestones.remove_all_milestones();
+                        }
+                    });
+
                     ui.horizontal(|ui| {
                         if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
                             trace_event.send(TraceEvent::DespawnAllTracesEvent);
@@ -160,8 +224,19 @@ fn gui(
             gauge!(m.0.clone() + "::z").set(pos[2]);
         }
 
-        if app_state.frame != frame {
-            app_state.frame = frame;
+        if app_state.frame != slider_frame {
+            if slider_frame > 0 {
+                app_state.frame = slider_frame - 1;
+            } else {
+                app_state.frame = 0;
+            }
+            app_state.render_frame = true;
+        } else if app_state.frame != milestone_frame {
+            if milestone_frame > 0 {
+                app_state.frame = milestone_frame - 1;
+            } else {
+                app_state.frame = 0;
+            }
             app_state.render_frame = true;
         }
     }
