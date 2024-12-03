@@ -117,3 +117,16 @@ pub(crate) fn update_milestone_board(milestones: &mut Milestones, width: f32, nu
         milestones.clear_dirty();
     //  }
 }
+
+
+pub(crate) fn milestones_event_orchestrator(
+    mut milestones: bevy::prelude::ResMut<Milestones>,
+    mut event_reader: bevy::prelude::EventReader<control_plugin::MilestoneEvent>
+){
+    for event in event_reader.read() {
+        match event {
+            control_plugin::MilestoneEvent::AddMilestoneFromC3dEvent(frame) => milestones.add_from_c3d(*frame),
+            _ => {}
+        }
+    }
+}
