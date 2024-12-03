@@ -10,7 +10,7 @@ use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, 
 use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
-use milestones::{update_milestone_board, Milestones};
+use milestones::{milestones_event_orchestrator, update_milestone_board, Milestones};
 
 pub struct GUIPlugin;
 
@@ -24,6 +24,7 @@ impl Plugin for GUIPlugin {
                     (gui, 
                     DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
                     ).chain())
+            .add_systems(Update, milestones_event_orchestrator)
             .init_resource::<Milestones>();
     }
 }

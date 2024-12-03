@@ -111,7 +111,7 @@ pub enum TraceEvent {
 #[derive(Event)]
 /// MilestoneEvent contains the events related to the milestones.
 pub enum MilestoneEvent {
-    AddMilestoneEvent(usize),
+    AddMilestoneFromC3dEvent(usize),
     RemoveMilestoneEvent(usize),
     RemoveAllMilestonesEvent,
 }
@@ -332,6 +332,7 @@ fn spawn_vectors_in_config(
 
 fn load_c3d(
     mut c3d_events: EventReader<C3dLoadedEvent>,
+    mut milestones_events: EventWriter<MilestoneEvent>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -422,7 +423,7 @@ fn load_c3d(
 
                 // Send milestones to the GUI
                 for milestone in asset.c3d.events.iter() {
-                    println!("Milestone: {:?}", milestone);
+                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent((milestone.time * app_state.frame_rate.unwrap_or(1.0)) as usize));
                 } 
 
                 println!("C3D loaded");
