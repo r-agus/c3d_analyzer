@@ -533,13 +533,13 @@ pub fn represent_vectors(
                         let direction = marker2.normalize_or_zero();
                         let position = marker1 + direction * length / 2.0;
                         let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
-                        let scale = Vec3::new(1.0, length, 1.0);
+                        let scale = Vec3::new(1.0, length/vector.2 as f32, 1.0);
                         transform.translation = position;
                         transform.rotation = rotation;
                         transform.scale = scale;
                     }
                     _ => {
-                        //println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
+
                     }
                 }
             }      
