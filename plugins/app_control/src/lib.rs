@@ -334,29 +334,6 @@ fn spawn_joins_in_config(
     }
 }
 
-/**
- * PbrBundle {
-                        mesh: meshes.add(
-                            Cylinder::new(
-                                if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
-                                1.0)
-                        ),
-                        material: materials.add(StandardMaterial {
-                            base_color: if line_color.len() == 3 {
-                                            Color::srgb_u8(line_color[0], line_color[1],line_color[2])
-                                        } else if line_color.len() == 4 {
-                                            Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
-                                        } else{
-                                            Color::srgb_u8(0, 127, 0)
-                                        },
-                            ..default()
-                        }),
-                        transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                        visibility: Visibility::Visible,
-                        ..default()
-                    }
- */
-
 fn spawn_vectors_in_config(
     current_config: &str,
     config_file: &ConfigFile,
@@ -434,10 +411,7 @@ fn load_c3d(
         let points = 
             commands
                 .spawn((
-                    PbrBundle {
-                        visibility: Visibility::Hidden,
-                        ..default()
-                    },
+                    Visibility::from(Visibility::Hidden),
                     C3dMarkers  // This is a bunch of markers
                 ))
                 .id();
