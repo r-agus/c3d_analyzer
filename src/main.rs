@@ -23,10 +23,12 @@ fn setup(
     // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Spawn a light and the camera
-    commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
-        ..default()
-    });
+    commands.spawn((
+        PointLight{
+            ..default()
+        },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)))
+    );
 
     commands.insert_resource(AmbientLight {
         brightness: 0.3,
