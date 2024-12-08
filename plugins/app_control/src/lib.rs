@@ -308,22 +308,54 @@ fn spawn_vectors_in_config(
     if config_file.get_config(current_config).is_some(){
         if let Some(vectors) = config_file.get_config(current_config).unwrap().get_vectors(){
             for (point, vector) in vectors {
+                let mut cone_mesh = Mesh::from(Cone {
+                    radius: 0.05,
+                    height: 0.2,
+                });
+                let mut cylinder_mesh = Mesh::from(Cylinder::new(
+                    0.01,
+                    1.0,    
+                ));
+
+                // Extract and modify positions
+                if let Some(positions) = cone_mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+                    let modified_positions: Vec<[f32; 3]> = positions
+                        .as_float3()
+                        .unwrap_or(&[[0.0, 0.0, 0.0]])
+                        .iter()
+                        .map(|&[x, y, z]| [x, y + 0.5, z]) // 0.5 = cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
+                        .collect();
+
+                    // Replace the positions attribute
+                    cone_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, modified_positions);
+                }
+                
+                cylinder_mesh.merge(&cone_mesh);
+
                 commands.spawn((
                     PbrBundle {
-                        mesh: meshes.add(
-                        Cylinder::new(
-                            0.01,
-                            1.0 * vector.1 as f32,
-                        )
-                    ),
-                    material: materials.add(StandardMaterial {
+                        mesh: meshes.add(cylinder_mesh),
+                        material: materials.add(StandardMaterial {
                         base_color: Color::srgb_u8(255, 220, 0),
                         ..default()
-                    }),
+                            }),
                     transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
                     visibility: Visibility::Visible,
                     ..default()
-                }, Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));   
+                    }, 
+                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
+                commands.spawn((
+                    PbrBundle {
+                        mesh: meshes.add(cone_mesh),
+                        material: materials.add(StandardMaterial {
+                            base_color: Color::srgb_u8(255, 220, 0),
+                            ..default()
+                        }),
+                        transform: Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
+                        visibility: Visibility::Visible,
+                        ..default()
+                    },
+                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
             }
         }
     }
