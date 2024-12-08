@@ -32,9 +32,10 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, (represent_joins, represent_vectors))
-            .add_systems(Update, (traces_event_orchestrator, despawn_all_markers_event))
+            .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
+            .add_event::<JoinEvent>()
             .add_event::<TraceEvent>()
             .add_event::<MilestoneEvent>()
             .add_event::<ReloadRegistryEvent>()
@@ -98,6 +99,12 @@ pub struct TraceInfo {
 /// MarkerEvent contains the events related to the markers.
 pub enum MarkerEvent {
     DespawnAllMarkersEvent,
+}
+
+#[derive(Event)]
+pub enum JoinEvent {
+    DespawnAllJoinsEvent,
+    DespawnJoinEvent(String, String),
 }
 
 #[derive(Event)]
@@ -298,6 +305,45 @@ fn spawn_marker(
     )).set_parent(parent);
 }
 
+fn spawn_joins_in_config(
+    current_config: &str,
+    config_file: &ConfigFile,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+){
+    if config_file.get_config(current_config).is_some(){
+        if let Some(joins) = config_file.get_config(current_config).unwrap().get_joins(){
+            for join in joins {
+                for i in 0..join.len() - 1 {
+                    let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
+                    let line_color = config_file.get_join_color(&join[i], &join[i+1], &current_config).unwrap_or(vec![0, 255, 0]);
+                    commands.spawn((PbrBundle {
+                        mesh: meshes.add(
+                            Cylinder::new(
+                                if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
+                                1.0)
+                        ),
+                        material: materials.add(StandardMaterial {
+                            base_color: if line_color.len() == 3 {
+                                            Color::srgb_u8(line_color[0], line_color[1],line_color[2])
+                                        } else if line_color.len() == 4 {
+                                            Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
+                                        } else{
+                                            Color::srgb_u8(0, 127, 0)
+                                        },
+                            ..default()
+                        }),
+                        transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                        visibility: Visibility::Visible,
+                        ..default()
+                    }, Join(join[i].clone(), join[i+1].clone())));
+                }
+            }
+        }
+    }
+}
+
 fn spawn_vectors_in_config(
     current_config: &str,
     config_file: &ConfigFile,
@@ -422,36 +468,7 @@ fn load_c3d(
 
                 // Spawn joins
                 if let Some(config_file) = config_file {
-                    let config = config_file.get_config(app_state.current_config.as_deref().unwrap_or("")).unwrap();
-                    config.get_joins().into_iter().for_each(|joins| {
-                        joins.into_iter().for_each(|join| {
-                            for i in 0..join.len() - 1 {
-                                let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
-                                let line_color = config_file.get_join_color(&join[i], &join[i+1], &current_config).unwrap_or(vec![0, 255, 0]);
-                                commands.spawn((
-                                PbrBundle {
-                                    mesh: meshes.add(
-                                        Cylinder::new(
-                                                    if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
-                                            1.0)
-                                    ),
-                                    material: materials.add(StandardMaterial {
-                                        base_color: if line_color.len() == 3 {
-                                                        Color::srgb_u8(line_color[0], line_color[1],line_color[2])
-                                                    } else if line_color.len() == 4 {
-                                                        Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
-                                                    } else{
-                                                        Color::srgb_u8(0, 127, 0)
-                                                    },
-                                        ..default()
-                                    }),
-                                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                                    visibility: Visibility::Visible,
-                                    ..default()
-                                }, Join(join[i].clone(), join[i+1].clone())
-                            ));
-                        }});
-                    });
+                    spawn_joins_in_config(&current_config, &config_file, &mut commands, &mut meshes, &mut materials);
                 }
 
                 // Send milestones to the GUI
@@ -515,6 +532,7 @@ pub fn represent_points(
 }
 
 pub fn represent_joins(
+    mut join_event: EventWriter<JoinEvent>,
     markers_query: Query<(&Marker, &Transform)>,
     mut joins_query: Query<(&mut Transform, &Join), Without<Marker>>,
     c3d_state: Res<C3dState>,
@@ -539,7 +557,7 @@ pub fn represent_joins(
                         transform.scale = scale;
                     }
                     _ => {
-                        //println!("Error: Marker not found {:?} - {:?}", join.0, join.1); // TODO: Despawn the join
+                        join_event.send(JoinEvent::DespawnJoinEvent(join.0.clone(), join.1.clone()));
                     }
                 }
             }      
@@ -587,6 +605,36 @@ pub fn represent_vectors(
     }
 }
 
+pub fn joins_event_orchestrator(
+    mut events: EventReader<JoinEvent>,
+    mut commands: Commands,
+    query_joins: Query<(Entity, &Join)>,
+){
+    if let Some(join_event) = events.read().last() {
+        match join_event {
+            JoinEvent::DespawnAllJoinsEvent => {
+                despawn_all_joins(&mut commands, &query_joins);
+            }
+            JoinEvent::DespawnJoinEvent(point1, point2) => {
+                delete_join_event(&mut commands, &query_joins, point1, point2);
+            }
+        }
+    }
+}
+
+fn delete_join_event(
+    commands: &mut Commands,
+    query_joins: &Query<(Entity, &Join)>,
+    point1: &str,
+    point2: &str,
+) {
+    for (entity, join) in query_joins.iter() {
+        if join.0 == point1 && join.1 == point2 {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
 /// Orchestrates the events related to the markers
 pub fn traces_event_orchestrator(
     mut events: EventReader<TraceEvent>,
@@ -604,7 +652,7 @@ pub fn traces_event_orchestrator(
         match trace_event {
             TraceEvent::UpdateTraceEvent => {
                 despawn_all_traces(&mut commands, query_delete_trace);
-                represent_traces_event(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
+                represent_traces(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
             }
             TraceEvent::DespawnAllTracesEvent => {
                 delete_all_traces_event(&mut commands, &mut state, query_delete_trace);
@@ -616,7 +664,7 @@ pub fn traces_event_orchestrator(
     }
 }
 
-fn represent_traces_event(
+fn represent_traces(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -799,6 +847,15 @@ fn despawn_all_markers_event(
     }
 }
 
+fn despawn_all_joins(
+    commands: &mut Commands,
+    query_joins: &Query<(Entity, &Join)>,
+) {
+    for (entity, _) in query_joins.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 fn despawn_all_vectors(
     commands: &mut Commands,
     query_vectors: &Query<(Entity, &Vector)>,
@@ -825,10 +882,7 @@ fn change_config(
     }
     state.change_config = false;
     
-    // TODO: Despawn all joins in separate function
-    for (entity, _) in query_joins.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
+    despawn_all_joins(&mut commands, &query_joins);
 
     // Load the new configuration. Just need to call load_c3d again. Will be taken into account in the next frame.
     ev_loaded.send(C3dLoadedEvent);
