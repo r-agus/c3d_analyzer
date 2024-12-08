@@ -549,7 +549,7 @@ pub fn represent_joins(
 
 pub fn represent_vectors(
     markers_query: Query<(&Marker, &Transform)>,
-    mut vectors_query: Query<(&Vector, &mut Transform), Without<Marker>>,
+    mut vectors_query: Query<(&Vector, &mut Transform, &mut Visibility), Without<Marker>>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ){
@@ -557,7 +557,7 @@ pub fn represent_vectors(
 
     match asset {
         Some(_asset) => {
-            for (vector, mut transform) in vectors_query.iter_mut() {
+            for (vector, mut transform, mut visibility) in vectors_query.iter_mut() {
                 let marker1 = get_marker_position_on_frame(&vector.0.0, &markers_query);
                 let marker2 = get_marker_position_on_frame(&vector.1.0, &markers_query);
                 match (marker1, marker2) {
@@ -570,6 +570,11 @@ pub fn represent_vectors(
                         transform.translation = position;
                         transform.rotation = rotation;
                         transform.scale = scale;
+                        if marker2.length() > 0.0005 { // Avoids anoying plate (cone base) when vector is too small
+                            *visibility = Visibility::Visible;
+                        } else {
+                            *visibility = Visibility::Hidden;
+                        }
                     }
                     _ => {
 
