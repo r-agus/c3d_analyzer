@@ -1,3 +1,8 @@
+/// # Milestones
+/// In this module we define the Milestones resource and its methods.
+/// In a common c3d file, there are defined some events. As in a bevy context events has a special meaning, we call them milestones.
+/// So milestones are events that are defined in the c3d file.
+
 use std::{collections::HashMap, usize};
 
 use bevy::prelude::Resource;
@@ -7,7 +12,6 @@ use egui_plot::{Line, PlotBounds};
 #[derive(Resource, Default)]
 pub struct Milestones {
     milestones: HashMap<usize, MilestoneType>,  // Frame, MilestoneType
-    dirty: bool, // For changes
 }
 
 enum MilestoneType {
@@ -18,16 +22,10 @@ enum MilestoneType {
 impl Milestones {
     pub fn default(&mut self) {
         self.milestones = HashMap::new();
-        self.dirty = true;
     }
 
     fn add_milestone(&mut self, frame: usize, milestone_type: MilestoneType) {
         self.milestones.insert(frame, milestone_type);
-        self.dirty = true;
-    }
-
-    fn clear_dirty(&mut self){
-        self.dirty = false;
     }
 
     pub(crate) fn add_user_generated(&mut self, frame: usize) {
@@ -40,12 +38,17 @@ impl Milestones {
 
     pub(crate) fn remove_milestone(&mut self, frame: usize) {
         self.milestones.remove(&frame);
-        self.dirty = true;
     }
 
-    pub(crate) fn remove_all_milestones(&mut self) {
+    pub(crate) fn _remove_all_milestones(&mut self) {
         self.milestones.clear();
-        self.dirty = true;
+    }
+
+    pub(crate) fn remove_user_generated_milestones(&mut self){
+        self.milestones.retain(|_, v| match v {
+            MilestoneType::UserGenerated => false,
+            _ => true,
+        });
     }
 
     pub(crate) fn get_milestones(&self) -> Vec<&usize> {
@@ -82,40 +85,37 @@ impl Milestones {
 
 // Update board
 pub(crate) fn update_milestone_board(milestones: &mut Milestones, width: f32, num_frames: usize, ui: &mut Ui) {
-    // if milestones.dirty {  // Can we avoid redrawing every frame?
-        let points: Vec<_> = milestones
-            .milestones
-            .keys()
-            .collect();
+    let points: Vec<_> = milestones
+        .milestones
+        .keys()
+        .collect();
 
-        let new_plot = egui_plot::Plot::new("milestones")
-            .allow_zoom(false)
-            .allow_scroll(false)
-            .allow_drag(false)
-            .allow_boxed_zoom(false)
-            .show_grid([false, false])
-            .show_axes([false, false])
-            .center_x_axis(false)
-            .show_x(false)
-            .show_y(false)
-            // .show_background(false)  // Maybe we'd like to use this
-            .height(15.)
-            .width(width);
-        
-        ui.horizontal(|ui|{
-            ui.label("Events:");
-            new_plot.show(ui, |plot_ui| {
-                plot_ui.set_plot_bounds(PlotBounds::from_min_max([0., -1.], [num_frames as f64, 1.]));
-                for &p in points {
-                    plot_ui.line(Line::new(vec![
-                        [p as f64, 1.0],
-                        [p as f64, -1.0]
-                    ]));
-                }
-            }).response;
-        });
-        milestones.clear_dirty();
-    //  }
+    let new_plot = egui_plot::Plot::new("milestones")
+        .allow_zoom(false)
+        .allow_scroll(false)
+        .allow_drag(false)
+        .allow_boxed_zoom(false)
+        .show_grid([false, false])
+        .show_axes([false, false])
+        .center_x_axis(false)
+        .show_x(false)
+        .show_y(false)
+        // .show_background(false)  // Maybe we'd like to use this
+        .height(15.)
+        .width(width);
+    
+    ui.horizontal(|ui|{
+        ui.label("Events:");
+        new_plot.show(ui, |plot_ui| {
+            plot_ui.set_plot_bounds(PlotBounds::from_min_max([0., -1.], [num_frames as f64, 1.]));
+            for &p in points {
+                plot_ui.line(Line::new(vec![
+                    [p as f64, 1.0],
+                    [p as f64, -1.0]
+                ]));
+            }
+        }).response;
+    });
 }
 
 

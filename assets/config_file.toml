@@ -45,7 +45,7 @@
 
     joins = [
         [["head"]],     # Unir todos los puntos de la cabeza
-        ["LUPA1", "LUPA2", "LFRA"], # Error con LWRB
+        ["LUPA1", "LUPA2", "LFRA", "LWRB"], # Error con LWRB
         [["rarm"]],
         ["CLAV", "C7", "T10", "STRN", "CLAV"],
         ["ThoraxS", "ThoraxI", "AbdI"],
@@ -57,7 +57,8 @@
     ]
 
     vectors = [
-        ["OBJ1", "LVelOBJ1"]
+        ["OBJ1", "LVelOBJ1"],
+        ["OBJ2", "LVelOBJ2"],
     ]
 
 

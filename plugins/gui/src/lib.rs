@@ -170,7 +170,7 @@ fn gui(
                                 milestones.remove_milestone(frame);
                             }
                         });
-                        let remove_all_milestones = ui.button("🔄").on_hover_text("Reset milestones");
+                        let remove_user_milestones = ui.button("🔄").on_hover_text("Reset milestones");
                         if prev_milestone_button.clicked() {
                             let prev = milestones.get_prev_milestone(app_state.frame);
                             milestone_frame = prev;
@@ -189,8 +189,8 @@ fn gui(
                         if play_pause_button.clicked() {
                             app_state.play = !app_state.play;
                         }
-                        if remove_all_milestones.clicked() {
-                            milestones.remove_all_milestones();
+                        if remove_user_milestones.clicked() {
+                            milestones.remove_user_generated_milestones();
                         }
                     });
 
