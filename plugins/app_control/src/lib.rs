@@ -308,13 +308,14 @@ fn spawn_vectors_in_config(
     if config_file.get_config(current_config).is_some(){
         if let Some(vectors) = config_file.get_config(current_config).unwrap().get_vectors(){
             for (point, vector) in vectors {
+                let default_cylinder_height = 1.0;
                 let mut cone_mesh = Mesh::from(Cone {
                     radius: 0.05,
                     height: 0.2,
                 });
                 let mut cylinder_mesh = Mesh::from(Cylinder::new(
                     0.01,
-                    1.0,    
+                    default_cylinder_height,    
                 ));
 
                 // Extract and modify positions
@@ -323,7 +324,7 @@ fn spawn_vectors_in_config(
                         .as_float3()
                         .unwrap_or(&[[0.0, 0.0, 0.0]])
                         .iter()
-                        .map(|&[x, y, z]| [x, y + 0.5, z]) // 0.5 = cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
+                        .map(|&[x, y, z]| [x, y + default_cylinder_height/2.0, z]) // cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
                         .collect();
 
                     // Replace the positions attribute
@@ -566,7 +567,7 @@ pub fn represent_vectors(
                         let direction = marker2.normalize_or_zero();
                         let position = marker1 + direction * length / 2.0;
                         let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
-                        let scale = Vec3::new(1.0, length/vector.2 as f32, 1.0);
+                        let scale = Vec3::new(1.0, length, 1.0);
                         transform.translation = position;
                         transform.rotation = rotation;
                         transform.scale = scale;
