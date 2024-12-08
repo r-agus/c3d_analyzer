@@ -411,6 +411,7 @@ fn load_c3d(
         let points = 
             commands
                 .spawn((
+                    Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
                     Visibility::from(Visibility::Hidden),
                     C3dMarkers  // This is a bunch of markers
                 ))
