@@ -38,13 +38,11 @@ fn setup(
     let translation = Vec3::new(0., -5.0, 5.);
 
     commands.spawn((
-        Camera3dBundle {
-            camera: Camera {
-                clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
-                ..default()
-            },
-            transform: Transform::from_translation(translation),
-            // .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
+        Camera3d{
+            ..default()
+        },
+        Camera {
+            clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
             ..default()
         },
         PanOrbitCamera {
@@ -54,6 +52,7 @@ fn setup(
             reversed_zoom: false,
             ..default()
         },
+        Transform::from_translation(translation),
     ));
 }
 
