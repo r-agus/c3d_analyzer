@@ -3,7 +3,6 @@ mod mouse_keyboard;
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
-use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
 
@@ -18,7 +17,7 @@ impl Plugin for ControlPlugin {
                             ..default()
                         }
                 )))
-            .add_plugins((C3dPlugin, DefaultPickingPlugins))
+            .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
@@ -38,7 +37,6 @@ impl Plugin for ControlPlugin {
             .add_event::<JoinEvent>()
             .add_event::<TraceEvent>()
             .add_event::<MilestoneEvent>()
-            .add_event::<ReloadRegistryEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
@@ -122,9 +120,6 @@ pub enum MilestoneEvent {
     RemoveMilestoneEvent(usize),
     RemoveAllMilestonesEvent,
 }
-
-#[derive(Event)]
-pub struct ReloadRegistryEvent;
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
@@ -247,61 +242,55 @@ fn spawn_marker(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ){
-    let matrix = Mat4::from_scale_rotation_translation(
-        Vec3::new(1.0, 1.0, 1.0),
-        Quat::from_rotation_y(0.0),
-        Vec3::new(0.0, 0.0, 0.0),
-    );
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(
-                // Obtain radius from get_point_size
-                Sphere::new(match config.as_ref() {
-                    Some(config) => {
-                        if let Some(size) = config.get_point_size(label, current_config) {
-                            0.014 * size as f32
-                        } else {
-                            0.014
-                        }
-                    }
-                    None => { 0.014 }
-                })
-                .mesh(),
-            ),
-            material: materials.add(StandardMaterial {
-                // Obtain color from get_point_color
-                base_color: match config.as_ref() {
-                    Some(config) => {
-                        if let Some(color) = config.get_point_color(label, current_config){
-                            if color.len() == 3 {
-                                Color::srgb_u8(color[0], color[1], color[2])
-                            } else if color.len() == 4 {
-                                Color::srgba_u8(color[0], color[1], color[2], color[3])
-                            } else {
-                                Color::srgb(0.0, 0.0, 1.0)
-                            }
-                        } else {
-                            Color::srgb(0.0, 0.0, 1.0)
-                        }
-                    }
-                    None => { Color::srgb(0.0, 0.0, 1.0) }
-                },
-                ..default()
-            }),
-            transform: Transform::from_matrix(matrix),
-            visibility: match config.as_ref() {
-                Some(config) => {
-                    if config.contains_point_regex(current_config, label) {
-                        Visibility::Visible
-                    } else {
-                        Visibility::Hidden
-                    }
+    let marker_mesh = meshes.add(
+        // Obtain radius from get_point_size
+        Sphere::new(match config.as_ref() {
+            Some(config) => {
+                if let Some(size) = config.get_point_size(label, current_config) {
+                    0.014 * size as f32
+                } else {
+                    0.014
                 }
-                None => { Visibility::Visible }
-            },
-            ..default()
+            }
+            None => { 0.014 }
+        }).mesh());
+    let marker_material = materials.add(StandardMaterial {
+        // Obtain color from get_point_color
+        base_color: match config.as_ref() {
+            Some(config) => {
+                if let Some(color) = config.get_point_color(label, current_config){
+                    if color.len() == 3 {
+                        Color::srgb_u8(color[0], color[1], color[2])
+                    } else if color.len() == 4 {
+                        Color::srgba_u8(color[0], color[1], color[2], color[3])
+                    } else {
+                        Color::srgb(0.0, 0.0, 1.0)
+                    }
+                } else {
+                    Color::srgb(0.0, 0.0, 1.0)
+                }
+            }
+            None => { Color::srgb(0.0, 0.0, 1.0) }
         },
-        Marker(label.to_string()),
+        ..default()
+    });
+
+    let marker_visibility = match config.as_ref() {
+        Some(config) => {
+            if config.contains_point_regex(current_config, label) {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            }
+        }
+        None => { Visibility::Visible }
+    };    
+    
+    commands.spawn((
+        Mesh3d(marker_mesh),
+        MeshMaterial3d(marker_material),
+        Visibility::from(marker_visibility),
+        Marker(label.to_string())
     )).set_parent(parent);
 }
 
@@ -318,7 +307,35 @@ fn spawn_joins_in_config(
                 for i in 0..join.len() - 1 {
                     let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
                     let line_color = config_file.get_join_color(&join[i], &join[i+1], &current_config).unwrap_or(vec![0, 255, 0]);
-                    commands.spawn((PbrBundle {
+                    let join_mesh =  meshes.add(
+                            Cylinder::new(
+                                if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
+                                1.0)
+                        );
+                    let join_material = materials.add(StandardMaterial {
+                        base_color: if line_color.len() == 3 {
+                                        Color::srgb_u8(line_color[0], line_color[1],line_color[2])
+                                    } else if line_color.len() == 4 {
+                                        Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
+                                    } else{
+                                        Color::srgb_u8(0, 127, 0)
+                                    },
+                        ..default()
+                    });
+
+                    commands.spawn((
+                        Mesh3d(join_mesh),
+                        MeshMaterial3d(join_material),
+                        Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                        Join(join[i].clone(), join[i+1].clone())));
+                }
+            }
+        }
+    }
+}
+
+/**
+ * PbrBundle {
                         mesh: meshes.add(
                             Cylinder::new(
                                 if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
@@ -337,12 +354,8 @@ fn spawn_joins_in_config(
                         transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
                         visibility: Visibility::Visible,
                         ..default()
-                    }, Join(join[i].clone(), join[i+1].clone())));
-                }
-            }
-        }
-    }
-}
+                    }
+ */
 
 fn spawn_vectors_in_config(
     current_config: &str,
@@ -380,28 +393,19 @@ fn spawn_vectors_in_config(
                 cylinder_mesh.merge(&cone_mesh);
 
                 commands.spawn((
-                    PbrBundle {
-                        mesh: meshes.add(cylinder_mesh),
-                        material: materials.add(StandardMaterial {
-                        base_color: Color::srgb_u8(255, 220, 0),
-                        ..default()
-                            }),
-                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                    visibility: Visibility::Visible,
-                    ..default()
-                    }, 
+                    Mesh3d(meshes.add(cylinder_mesh)),
+                    MeshMaterial3d(materials.add(StandardMaterial {
+                    base_color: Color::srgb_u8(255, 220, 0),
+                        ..default()})),
+                    Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
                     Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
                 commands.spawn((
-                    PbrBundle {
-                        mesh: meshes.add(cone_mesh),
-                        material: materials.add(StandardMaterial {
-                            base_color: Color::srgb_u8(255, 220, 0),
-                            ..default()
-                        }),
-                        transform: Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
-                        visibility: Visibility::Visible,
+                    Mesh3d(meshes.add(cone_mesh)),
+                    MeshMaterial3d(materials.add(StandardMaterial {
+                        base_color: Color::srgb_u8(255, 220, 0),
                         ..default()
-                    },
+                    })),
+                    Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
                     Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
             }
         }
@@ -679,18 +683,14 @@ fn represent_traces(
             Some(positions) => {
                 for position in positions {
                     commands.spawn((
-                        PbrBundle {
-                            mesh: meshes.add(
+                        Mesh3d(meshes.add(
                                 Sphere::new(0.005).mesh()
-                            ),
-                            material: materials.add(StandardMaterial {
+                            )),
+                        MeshMaterial3d(materials.add(StandardMaterial {
                                 base_color: Color::srgb_u8(49, 0, 69),
                                 ..default()
-                            }),
-                            transform: Transform::from_translation(position),
-                            visibility: Visibility::Visible,
-                            ..default()
-                        },    
+                            })),
+                        Transform::from_translation(position),    
                         Trace(point.clone()),
                     ));
                 }
