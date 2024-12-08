@@ -1,3 +1,8 @@
+/// # Milestones
+/// In this module we define the Milestones resource and its methods.
+/// In a common c3d file, there are defined some events. As in a bevy context events has a special meaning, we call them milestones.
+/// So milestones are events that are defined in the c3d file.
+
 use std::{collections::HashMap, usize};
 
 use bevy::prelude::Resource;
@@ -35,8 +40,15 @@ impl Milestones {
         self.milestones.remove(&frame);
     }
 
-    pub(crate) fn remove_all_milestones(&mut self) {
+    pub(crate) fn _remove_all_milestones(&mut self) {
         self.milestones.clear();
+    }
+
+    pub(crate) fn remove_user_generated_milestones(&mut self){
+        self.milestones.retain(|_, v| match v {
+            MilestoneType::UserGenerated => false,
+            _ => true,
+        });
     }
 
     pub(crate) fn get_milestones(&self) -> Vec<&usize> {
