@@ -12,7 +12,7 @@ use bevy_egui::{
 };
 use metrics::Unit;
 
-use control_plugin::{get_marker_position_on_all_frames, AppState, Marker};
+use control_plugin::{AppState, markers::*};
 
 #[derive(Clone, Event)]
 pub struct RequestPlot {

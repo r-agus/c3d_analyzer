@@ -14,7 +14,7 @@ use std::{
     borrow::BorrowMut, sync::atomic::{AtomicU64, Ordering}, time::{Duration, Instant}
 };
 
-use control_plugin::{AppState, TraceEvent, TraceInfo};
+use control_plugin::{traces::*, AppState};
 
 /// A widget that shows all metrics metadata in a tree, grouped by namespace.
 ///

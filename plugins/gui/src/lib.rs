@@ -11,6 +11,9 @@ use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
 use milestones::{milestones_event_orchestrator, update_milestone_board, Milestones};
+use vectors::*;
+use markers::*;
+use traces::*;
 
 pub struct GUIPlugin;
 
@@ -51,6 +54,7 @@ fn _describe_graphs(
 
 fn gui(
     mut trace_event: EventWriter<TraceEvent>,
+    mut vector_event: EventWriter<VectorEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     mut milestones: ResMut<Milestones>,
@@ -58,6 +62,7 @@ fn gui(
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
     markers_query: Query<(&Marker, &Transform)>,
+    vectors_query: Query<(&Vector, &Visibility)>,
 ) {
     let timeline_enabled;
     {
@@ -195,9 +200,6 @@ fn gui(
                     });
 
                     ui.horizontal(|ui| {
-                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
-                        }
                         ui.menu_button("Select configuration", |ui|{
                             ui.label("Select configuration");
                             let config_state = config_assets.get(&config_state.handle);
@@ -209,7 +211,32 @@ fn gui(
                                     }
                                 }
                             }
-                        })
+                        });
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
+                        }
+                        ui.menu_button("Vectors", |ui| {
+                            if ui.button("Hide all").clicked() {
+                                vector_event.send(VectorEvent::HideAllVectorsEvent);
+                            } 
+                            if ui.button("Show all").clicked() {
+                                vector_event.send(VectorEvent::ShowAllVectorsEvent);
+                            }
+                            
+                            let mut vectors = vectors_query // for some reason query duplicates the vectors, so filter them out
+                                .iter()
+                                .collect::<Vec<_>>();
+                            vectors.dedup();
+                            for (vector, visibility) in vectors {
+                                if ui.button(vector.0.0.clone()).clicked() {
+                                    if visibility == Visibility::Visible {
+                                        vector_event.send(VectorEvent::HideVectorEvent(vector.clone()));
+                                    } else {
+                                        vector_event.send(VectorEvent::ShowVectorEvent(vector.clone()));
+                                    }
+                                }
+                            }
+                        });
                     });
                 });
                 // });
