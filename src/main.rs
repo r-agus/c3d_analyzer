@@ -24,11 +24,9 @@ fn setup(
 ) {
     // Spawn a light and the camera
     commands.spawn((
-        PointLight{
-            ..default()
-        },
-        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)))
-    );
+        PointLight { ..default() },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
+    ));
 
     commands.insert_resource(AmbientLight {
         brightness: 0.3,
@@ -38,9 +36,7 @@ fn setup(
     let translation = Vec3::new(0., -5.0, 5.);
 
     commands.spawn((
-        Camera3d{
-            ..default()
-        },
+        Camera3d { ..default() },
         Camera {
             clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
             ..default()
