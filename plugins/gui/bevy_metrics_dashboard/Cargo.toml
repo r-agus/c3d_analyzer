@@ -22,7 +22,7 @@ opt-level = 2
 render_metrics = ["bevy/bevy_core_pipeline"]
 
 [dependencies]
-bevy_egui = "0.30"
+bevy_egui = "0.31.1"
 egui_plot = "0.29"
 float-ord = "0.3.2"
 fuzzy-matcher = "0.3.7"
@@ -35,7 +35,7 @@ bevy_c3d_mod = { path = "../../bevy_c3d_mod" }
 config_plugin = { path = "../../c3d_config" }
 
 [dependencies.bevy]
-version = "0.14"
+version = "^0.15.0"
 default-features = false
 features = ["multi_threaded"]
 
@@ -43,7 +43,7 @@ features = ["multi_threaded"]
 rand = "0.8.5"
 
 [dev-dependencies.bevy]
-version = "0.14"
+version = "^0.15.0"
 default-features = false
 features = ["bevy_sprite", "png", "wayland"]
 

@@ -15,20 +15,20 @@ exclude = ["tests", "tests/*", "examples", "examples/*", "assets", "assets/*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_app = "^0.14"
-bevy_asset = "^0.14"
-bevy_render = "^0.14"
-bevy_reflect = "^0.14"
-bevy_utils = "^0.14"
-bevy_ecs = "^0.14"
-bevy_scene = { version = "^0.14", optional = true}
-bevy_pbr = { version = "^0.14", optional = true}
+bevy_app = "^0.15"
+bevy_asset = "^0.15"
+bevy_render = "^0.15"
+bevy_reflect = "^0.15"
+bevy_utils = "^0.15"
+bevy_ecs = "^0.15"
+bevy_scene = { version = "^0.15", optional = true}
+bevy_pbr = { version = "^0.15", optional = true}
 c3dio = "0.8"
 
 config_plugin = { path = "../c3d_config" }
 
 [dev-dependencies]
-bevy = "^0.14"
+bevy = "^0.15"
 
 [[example]]
 name = "basic"

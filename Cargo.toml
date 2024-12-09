@@ -1,14 +1,14 @@
 [package]
 name = "proyecto_swing"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Rubén Agustín <r.agussglz@gmail.com>"]
 edition = "2021"
 
 license-file = "LICENSE.txt"
 
 [dependencies]
-bevy = "0.14.2"
-bevy_panorbit_camera = { version = "0.19.5", features = ["bevy_egui"] }
+bevy = "^0.15.0"
+bevy_panorbit_camera = { version = "0.21", features = ["bevy_egui"] }
 control_plugin = { path = "plugins/app_control" }
 gui_plugin = { path = "plugins/gui" }
 wasm-bindgen = "^0.2.73"
