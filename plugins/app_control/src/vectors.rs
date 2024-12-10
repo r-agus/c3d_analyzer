@@ -4,6 +4,29 @@ use crate::*;
 /// This represents a vector. It contains the labels of the points that are joined. First point is the origin, second point is the vector, third parameter is the scale.
 pub struct Vector(pub Marker, pub Marker, pub f64);
 
+#[derive(Resource, Default)]
+pub(crate) struct VectorsVisibility {
+    vectors: Vec<Vector>,
+}
+
+impl VectorsVisibility {
+    fn hide_vector(&mut self, vector: Vector) {
+        self.vectors.push(vector);
+    }
+    fn show_vector(&mut self, vector: &Vector) {
+        self.vectors.retain(|v| v != vector);
+    }
+    fn show_all_vectors(&mut self) {
+        self.vectors.clear();
+    }
+    fn hide_all_vectors(&mut self, vectors: Vec<Vector>) {
+        self.vectors = vectors;
+    }
+    fn is_vector_visible(&self, vector: &Vector) -> bool {
+        !self.vectors.contains(vector)
+    }
+}
+
 #[derive(Event)]
 /// VectorEvent contains the events related to the vectors.
 pub enum VectorEvent {
@@ -68,9 +91,10 @@ pub(crate) fn spawn_vectors_in_config(
     }
 }
 
-pub fn represent_vectors(
+pub(crate) fn represent_vectors(
     markers_query: Query<(&Marker, &Transform)>,
     mut vectors_query: Query<(&Vector, &mut Transform, &mut Visibility), Without<Marker>>,
+    vectors_visibility: Res<VectorsVisibility>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ){
@@ -91,10 +115,13 @@ pub fn represent_vectors(
                         transform.translation = position;
                         transform.rotation = rotation;
                         transform.scale = scale;
-                        if marker2.length() > 0.0005 { // Avoids anoying plate (cone base) when vector is too small
+                        if marker2.length() < 0.0005 { // Avoids anoying plate (cone base) when vector is too small
+                            *visibility = Visibility::Hidden;
+                        } else if vectors_visibility.is_vector_visible(&vector) {
                             *visibility = Visibility::Visible;
                         } else {
                             *visibility = Visibility::Hidden;
+                            
                         }
                     }
                     _ => {
@@ -105,6 +132,55 @@ pub fn represent_vectors(
         },
         None => {}
     }
+}
+
+pub(crate) fn vector_event_orchestrator(
+    mut vector_event: EventReader<VectorEvent>,
+    mut vector_query: Query<(&Vector, &mut Visibility)>,
+    mut vectors_visibility: ResMut<VectorsVisibility>,
+){
+    if let Some(vector_event) = vector_event.read().last() {
+        match vector_event {
+            VectorEvent::HideAllVectorsEvent => {
+                vectors_visibility.hide_all_vectors(vector_query.iter().map(|(v, _)| v.clone()).collect());
+                vector_query.iter_mut().for_each(|(_, mut visibility)| *visibility = Visibility::Hidden)
+            },
+            VectorEvent::ShowAllVectorsEvent => {
+                vectors_visibility.show_all_vectors();
+                vector_query.iter_mut().for_each(|(_, mut visibility)| *visibility = Visibility::Visible)
+            },
+            VectorEvent::HideVectorEvent(vector) => {
+                vectors_visibility.hide_vector(vector.clone());
+                hide_vector(vector, vector_query)
+            },
+            VectorEvent::ShowVectorEvent(vector) => {
+                vectors_visibility.show_vector(&vector);
+                show_vector(vector, vector_query)
+            },
+        }
+    }
+}
+
+fn hide_vector(
+    vector: &Vector,
+    mut vector_query: Query<(&Vector, &mut Visibility)>
+) {
+    vector_query.iter_mut().for_each(|(v, mut visibility)| {
+        if v == vector {
+            *visibility = Visibility::Hidden;
+        }
+    });
+}
+
+fn show_vector(
+    vector: &Vector,
+    mut vector_query: Query<(&Vector, &mut Visibility)>
+) {
+    vector_query.iter_mut().for_each(|(v, mut visibility)| {
+        if v == vector {
+            *visibility = Visibility::Visible;
+        }
+    });
 }
 
 pub(crate) fn despawn_all_vectors(

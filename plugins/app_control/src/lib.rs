@@ -39,7 +39,7 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, (represent_joins, represent_vectors))
-            .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, despawn_all_markers_event))
+            .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, vector_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
             .add_event::<JoinEvent>()
@@ -48,6 +48,7 @@ impl Plugin for ControlPlugin {
             .add_event::<MilestoneEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
+            .init_resource::<VectorsVisibility>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
         println!("Control Plugin loaded");
     }
