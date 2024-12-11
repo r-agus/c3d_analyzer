@@ -5,6 +5,8 @@ pub mod markers;
 pub mod joins;
 pub mod traces;
 
+use std::collections::HashMap;
+
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
@@ -149,7 +151,7 @@ fn setup(
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    state.c3d_path =  "golpeo3.c3d".to_string();
+    state.c3d_path =  "".to_string();
     state.current_config = Some("config1".to_string());
     state.config_path = "config_file.toml".to_string();
     state.reload_c3d = true;
@@ -168,7 +170,7 @@ fn load_c3d(
     mut c3d_events: EventReader<C3dLoadedEvent>,
     mut milestones_events: EventWriter<MilestoneEvent>,
     c3d_state: ResMut<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
+    mut c3d_assets: ResMut<Assets<C3dAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
@@ -181,7 +183,7 @@ fn load_c3d(
         
         despawn_all_markers(&mut commands, &query_markers);
 
-        let c3d_asset = c3d_assets.get(&c3d_state.handle);
+        let c3d_asset = c3d_assets.get_mut(&c3d_state.handle);
         let points = 
             commands
                 .spawn((
@@ -203,8 +205,8 @@ fn load_c3d(
         match c3d_asset {
             Some(asset) => {
                 // Spawn markers
-                for label in &asset.c3d.points.labels {
-                    spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
+                for label in get_all_labels(&mut asset.c3d) {
+                    spawn_marker(&label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
                 }
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
@@ -213,7 +215,7 @@ fn load_c3d(
                 
                 let num_frames = asset.c3d.points.size().0;
                 app_state.num_frames = num_frames;
-                app_state.traces.end_frame = num_frames as f32 / 20.0; 
+                app_state.traces.end_frame = num_frames as f32 - 20.0; 
 
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
@@ -226,6 +228,7 @@ fn load_c3d(
 
                 // Send milestones to the GUI
                 for milestone in asset.c3d.events.iter() {
+                    println!("{:?}", milestone);
                     milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent((milestone.time * app_state.frame_rate.unwrap_or(1.0)) as usize));
                 } 
 
@@ -236,6 +239,37 @@ fn load_c3d(
             }
         }
     }
+}
+
+fn get_all_labels(
+    c3d: &mut C3d,
+) -> Vec<String> {
+    let mut labels = c3d.points.labels.clone();
+    if let Some(group) = c3d.parameters.get_group("POINT"){
+        let other_labels_params = group
+            .iter()
+            .filter(|(k, _)| k.starts_with("LABEL"))
+            .collect::<HashMap<_, _>>();
+
+        for (_, param) in other_labels_params {
+            match param.data.clone() {
+                ParameterData::Char(vec) => {
+                    let dim = param.dimensions.clone();
+                    let label = vec
+                        .chunks(dim[0] as usize)
+                        .map(|chunk| chunk.iter().collect::<String>())
+                        .collect::<Vec<String>>();
+                    let label = label
+                        .iter()
+                        .map(|s| s.trim().to_string())
+                        .collect::<Vec<String>>();
+                    labels.extend(label);
+                },
+                _ => {}
+            }
+        }
+    }
+    labels
 }
 
 fn change_frame_rate(
