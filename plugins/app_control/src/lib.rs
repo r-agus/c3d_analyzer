@@ -251,6 +251,9 @@ fn get_all_labels(
             .filter(|(k, _)| k.starts_with("LABEL"))
             .collect::<HashMap<_, _>>();
 
+        let mut other_labels_params = other_labels_params.into_iter().collect::<Vec<_>>();
+        other_labels_params.sort_by_key(|(k, _)| *k);
+
         for (_, param) in other_labels_params {
             match param.data.clone() {
                 ParameterData::Char(vec) => {
