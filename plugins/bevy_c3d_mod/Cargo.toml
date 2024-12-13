@@ -23,7 +23,7 @@ bevy_utils = "^0.15"
 bevy_ecs = "^0.15"
 bevy_scene = { version = "^0.15", optional = true}
 bevy_pbr = { version = "^0.15", optional = true}
-c3dio = "0.8"
+c3dio = { git = "https://github.com/r-agus/c3dio", branch = "fix_events" }
 
 config_plugin = { path = "../c3d_config" }
 

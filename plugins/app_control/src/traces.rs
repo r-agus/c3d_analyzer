@@ -14,7 +14,7 @@ pub struct Trace(pub String);
 pub struct TraceInfo {
     pub start_frame: f32,
     pub end_frame: f32,
-    pub points: Vec<String>,
+    pub points: Vec<String>, // Replace by Box ??
 }
 
 #[derive(Event)]
