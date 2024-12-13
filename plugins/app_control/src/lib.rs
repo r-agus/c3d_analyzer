@@ -51,6 +51,7 @@ impl Plugin for ControlPlugin {
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .init_resource::<VectorsVisibility>()
+            .init_resource::<Labels>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
         println!("Control Plugin loaded");
     }
@@ -178,6 +179,7 @@ fn load_c3d(
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
     query_markers: Query<(Entity, &C3dMarkers)>,
+    mut all_labels: ResMut<Labels>
 ) {
     if let Some(_) = c3d_events.read().last() {
         
@@ -205,13 +207,16 @@ fn load_c3d(
         match c3d_asset {
             Some(asset) => {
                 // Spawn markers
-                for label in get_all_labels(&mut asset.c3d) {
-                    spawn_marker(&label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
+                all_labels.labels = get_all_labels(&asset.c3d);
+                let mut visibility = Vec::new();
+                for label in &all_labels.labels {
+                    let marker_visibility = spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
+                    visibility.push(marker_visibility);
                 }
+                all_labels.visible = visibility;
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
-                println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
                 
                 let num_frames = asset.c3d.points.size().0;
                 app_state.num_frames = num_frames;
@@ -227,9 +232,10 @@ fn load_c3d(
                 }
 
                 // Send milestones to the GUI
+                let start_frame = asset.c3d.points.first_frame as f32;
                 for milestone in asset.c3d.events.iter() {
-                    println!("{:?}", milestone);
-                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent((milestone.time * app_state.frame_rate.unwrap_or(1.0)) as usize));
+                    let milestone_frame = milestone.time * asset.c3d.points.frame_rate - start_frame;
+                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent(milestone_frame as usize));
                 } 
 
                 println!("C3D loaded");
@@ -241,8 +247,8 @@ fn load_c3d(
     }
 }
 
-fn get_all_labels(
-    c3d: &mut C3d,
+pub(crate) fn get_all_labels(
+    c3d: &C3d,
 ) -> Vec<String> {
     let mut labels = c3d.points.labels.clone();
     if let Some(group) = c3d.parameters.get_group("POINT"){
