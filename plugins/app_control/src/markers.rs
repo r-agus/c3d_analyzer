@@ -9,6 +9,8 @@ pub struct C3dMarkers;
 pub struct Marker(pub String);
 
 #[derive(Resource, Default)]
+// TODO: Remove this.
+// This should be removed. Is a list of labels (Markers) and their visibility. Better solution would be to add a visibility component to the Marker component.
 pub(crate) struct Labels{
     pub(crate) labels:  Vec<String>,
     pub(crate) visible: Vec<Visibility>,
