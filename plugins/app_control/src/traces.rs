@@ -20,6 +20,7 @@ pub struct TraceInfo {
 #[derive(Event)]
 /// TraceEvent contains the events related to the traces.
 pub enum TraceEvent {
+    AddTraceEvent(String),
     UpdateTraceEvent,
     DespawnTraceEvent(String),
     DespawnAllTracesEvent,
@@ -65,6 +66,13 @@ pub fn traces_event_orchestrator(
     //for trace_event in events.read() {
     if let Some(trace_event) = events.read().last() {
         match trace_event {
+            TraceEvent::AddTraceEvent(trace) => {
+                if !state.traces.is_trace_added(trace.clone()) {
+                    state.traces.add_point(trace.clone());
+                }
+                despawn_all_traces(&mut commands, query_delete_trace);
+                represent_traces(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
+            }
             TraceEvent::UpdateTraceEvent => {
                 despawn_all_traces(&mut commands, query_delete_trace);
                 represent_traces(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
