@@ -109,7 +109,10 @@ impl MarkersWindow {
         query_markers: Query<&Marker>,
         query_traces:  Query<&Trace>,
         query_windows: Query<(Entity, &Self)>,
+        config_state: Res<ConfigState>,
+        config_assets: Res<Assets<ConfigC3dAsset>>,
     ) {
+        let config_state = config_assets.get(&config_state.handle);
         let traces = query_traces.iter().map(|trace| trace.0.clone()).collect::<Vec<String>>();
         for (entity, _) in query_windows.iter() {
             let ctx = ctx.ctx_mut();
@@ -123,38 +126,71 @@ impl MarkersWindow {
                     ui.separator();
                     let mut markers = query_markers.iter().map(|marker| marker.0.clone()).collect::<Vec<String>>();
                     markers.sort();
-                    for marker in markers {
-                        ui.horizontal(|ui| {
-                            let (text, contained) = if traces.contains(&marker) {
-                                ("Remove Trace", true)    
-                            } else {
-                                ("Trace", false)
-                            };
-                            if ui.button(text).clicked() {
-                                match contained {
-                                    true =>  trace_event.send(TraceEvent::DespawnTraceEvent(marker.clone())),
-                                    false => trace_event.send(TraceEvent::AddTraceEvent(marker.clone())),
-                                };
-                            }
-                            ui.collapsing(marker.clone(), |ui| {
-                                if ui.button("Plot X").clicked() {
-                                    graphs.add_empty_graph(marker.to_string(), XYZ::X);
-                                }
-                                if ui.button("Plot Y").clicked() {
-                                    graphs.add_empty_graph(marker.to_string(), XYZ::Y);
-                                }
-                                if ui.button("Plot Z").clicked() {
-                                    graphs.add_empty_graph(marker.to_string(), XYZ::Z);
-                                }
+                    markers.dedup();
+
+                    let mut represented_points = Vec::new();
+                    
+                    if let Some(config_state) = config_state {
+                        config_state.config.get_config_map().iter().for_each(|(key, value)| {
+                            ui.collapsing(key, |ui| {
+                                let binding = vec![];
+                                let mut markers_in_config = value.get_visible_points().unwrap_or(&binding).clone();
+                                markers_in_config.sort();
+                                markers_in_config.dedup();
+                                represented_points = draw_childs(ui, &mut graphs, &mut trace_event, &markers_in_config, &traces)
                             });
                         });
                     }
-            });
+
+                    markers.retain(|marker| !represented_points.contains(marker));
+
+                    ui.collapsing("Not in config", |ui| {
+                        draw_childs(ui, &mut graphs, &mut trace_event, &markers, &traces);
+                    });
+                });
             if !open {
                 commands.entity(entity).despawn();
             }
         }
     }
+}
+
+fn draw_childs (
+    ui: &mut egui::Ui,
+    graphs: &mut ResMut<Graphs>,
+    trace_event: &mut EventWriter<TraceEvent>,
+    markers: &Vec<String>,
+    traces: &Vec<String>,
+) -> Vec<String> {
+    let mut represented_points = Vec::new();
+    for marker in markers {
+        ui.horizontal(|ui| {
+            let (text, contained) = if traces.contains(&marker) {
+                ("Remove Trace", true)    
+            } else {
+                ("Trace", false)
+            };
+            if ui.button(text).clicked() {
+                match contained {
+                    true =>  trace_event.send(TraceEvent::DespawnTraceEvent(marker.clone())),
+                    false => trace_event.send(TraceEvent::AddTraceEvent(marker.clone())),
+                };
+            }
+            ui.collapsing(marker.clone(), |ui| {
+                if ui.button("Plot X").clicked() {
+                    graphs.add_empty_graph(marker.to_string(), XYZ::X);
+                }
+                if ui.button("Plot Y").clicked() {
+                    graphs.add_empty_graph(marker.to_string(), XYZ::Y);
+                }
+                if ui.button("Plot Z").clicked() {
+                    graphs.add_empty_graph(marker.to_string(), XYZ::Z);
+                }
+            });
+        });
+        represented_points.push(marker.clone());
+    }
+    represented_points
 }
 
 impl XYZ {
