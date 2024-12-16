@@ -8,6 +8,13 @@ pub struct C3dMarkers;
 /// This is the marker that represents the points in the C3D file, with its label
 pub struct Marker(pub String);
 
+#[derive(Resource, Default)]
+// TODO: Remove this.
+// This should be removed. Is a list of labels (Markers) and their visibility. Better solution would be to add a visibility component to the Marker component.
+pub(crate) struct Labels{
+    pub(crate) labels:  Vec<String>,
+    pub(crate) visible: Vec<Visibility>,
+}
 
 #[derive(Event)]
 /// MarkerEvent contains the events related to the markers.
@@ -15,6 +22,7 @@ pub enum MarkerEvent {
     DespawnAllMarkersEvent,
 }
 
+/// Spawn a marker entity with the given label and return visibility in config
 pub(crate) fn spawn_marker(
     label: &str,
     current_config: &str,
@@ -23,7 +31,7 @@ pub(crate) fn spawn_marker(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-){
+) -> Visibility {
     let marker_mesh = meshes.add(
         // Obtain radius from get_point_size
         Sphere::new(match config.as_ref() {
@@ -66,7 +74,7 @@ pub(crate) fn spawn_marker(
             }
         }
         None => { Visibility::Visible }
-    };    
+    };
     
     commands.spawn((
         Mesh3d(marker_mesh),
@@ -74,51 +82,59 @@ pub(crate) fn spawn_marker(
         Visibility::from(marker_visibility),
         Marker(label.to_string())
     )).set_parent(parent);
+    
+    marker_visibility
 }
 
-pub fn represent_points(
+pub(crate) fn represent_points(
     mut state: ResMut<AppState>,
     query_points: Query<(&C3dMarkers, &Children)>,          // C3dMarkers and their children (Markers)
-    mut query_markers: Query<(&mut Transform, &Marker)>,
+    mut query_markers: Query<(&mut Transform, &mut Visibility, &Marker)>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
+    all_labels: Res<Labels>,
 ) {
     if state.render_frame {
         state.render_frame = false;
     }
+    let c3d_asset = c3d_assets.get(&c3d_state.handle);
 
-    let asset = c3d_assets.get(&c3d_state.handle);
-
-    match asset {
-        Some(asset) => {
-            let point_data = &asset.c3d.points;
+    match c3d_asset {
+        Some(c3d) => {
+            let point_data = &c3d.c3d.points;
             let num_frames = point_data.size().0;
+            let _num_markers = point_data.size().1;
             let mut i = 0;
             
-            //state.num_frames = num_frames;
-
             for (_points, children) in query_points.iter() {
                 for &child in children.iter() {
                     let pos = query_markers.get_mut(child);
                     match pos {
-                        Ok((mut transform, _)) => {
-                            transform.translation = Vec3::new(
-                                point_data[(state.frame, i)][0] as f32 / 1000.0,
-                                point_data[(state.frame, i)][1] as f32 / 1000.0,
-                                point_data[(state.frame, i)][2] as f32 / 1000.0,
-                            );
-                            i += 1;
+                        Ok((mut transform, mut vis, _)) => {
+                            let x = point_data[(state.frame, i)][0] as f32 / 1000.0;
+                            let y = point_data[(state.frame, i)][1] as f32 / 1000.0;
+                            let z = point_data[(state.frame, i)][2] as f32 / 1000.0;
+                            
+                            if x == 0.0 && y == 0.0 && z == 0.0 {
+                                *vis = Visibility::Hidden;
+                            } else {
+                                *vis = all_labels.visible[i];
+                            }
+                            
+                            transform.translation = Vec3::new(x, y, z);
                         }
                         Err(_) => {}
                     }
+                    i += 1;
                 }         
             }
+            // assert_eq!(i, num_markers);
             state.frame += 1;
             if state.frame >= num_frames {
                 state.frame = 0;
             }   
         }
-        None => {}
+        _ => {}
     }
 }
 

@@ -17,6 +17,8 @@
     rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
     ball = ["BALL"]
 
+    errores = ["LWRB", "Rfemur.*"]
+
 [head.config]
     point_color = [255, 0, 0]
     point_size = 0.5 # Mitad del tamaño original
@@ -45,7 +47,7 @@
 
     joins = [
         [["head"]],     # Unir todos los puntos de la cabeza
-        ["LUPA1", "LUPA2", "LFRA", "LWRB"], # Error con LWRB
+        ["LUPA1", "LUPA2", "LFRA", "LWRB"], # Error con LWRB, RFemurIv, RFemurJv, RFemurKv 
         [["rarm"]],
         ["CLAV", "C7", "T10", "STRN", "CLAV"],
         ["ThoraxS", "ThoraxI", "AbdI"],
@@ -59,6 +61,7 @@
     vectors = [
         ["OBJ1", "LVelOBJ1"],
         ["OBJ2", "LVelOBJ2"],
+        ["ThoraxC", "WThorax"],
     ]
 
 
@@ -77,3 +80,10 @@
     join_color = [255, 195, 0]
     line_thickness = 2.0
     point_size = 1.5
+
+[errores]
+    visible_points = [["errores"]]
+
+    point_color = [255, 0, 0]
+    join_color = [255, 195, 0]
+    point_size = 10.0

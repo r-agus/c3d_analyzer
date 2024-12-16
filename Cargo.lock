@@ -2857,8 +2857,7 @@ checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 [[package]]
 name = "c3dio"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83dbedf76939414b23307af1cdb7446bdb913a9f586f094664f7df5ab1808caa"
+source = "git+https://github.com/r-agus/c3dio?branch=fix_events#0c02ad703fac1be071ba0de0d62344819c2a8f53"
 dependencies = [
  "grid 0.10.0",
 ]
