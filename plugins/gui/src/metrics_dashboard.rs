@@ -33,7 +33,7 @@ pub(crate) enum GraphEvent {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum XYZ {
+pub(crate) enum XYZ {
     X = 0,
     Y = 1,
     Z = 2,
@@ -101,37 +101,64 @@ impl MarkersWindow {
     fn new() -> Self {
         MarkersWindow
     }
-    pub(crate) fn draw_all(
+    pub(crate) fn draw_floating_window(
         mut ctx: EguiContexts,
-        query_windows: Query<&Self>,
-        query_markers: Query<&Marker>,
+        mut commands: Commands,
         mut graphs: ResMut<Graphs>,
+        mut trace_event: EventWriter<TraceEvent>,
+        query_markers: Query<&Marker>,
+        query_traces:  Query<&Trace>,
+        query_windows: Query<(Entity, &Self)>,
     ) {
-        for _ in query_windows.iter() {
+        let traces = query_traces.iter().map(|trace| trace.0.clone()).collect::<Vec<String>>();
+        for (entity, _) in query_windows.iter() {
             let ctx = ctx.ctx_mut();
-            egui::Window::new("Markers").show(ctx, |ui| {
-                ui.label("Select a marker to add a graph");
-                ui.separator();
-                for marker in &query_markers {
-                    ui.collapsing(marker.0.clone(), |ui| {
-                        if ui.button("x").clicked() {
-                            graphs.add_empty_graph(marker.0.to_string(), XYZ::X);
-                        }
-                        if ui.button("y").clicked() {
-                            graphs.add_empty_graph(marker.0.to_string(), XYZ::Y);
-                        }
-                        if ui.button("z").clicked() {
-                            graphs.add_empty_graph(marker.0.to_string(), XYZ::Z);
-                        }
-                    });
-                }
+            let mut open = true;
+
+            egui::Window::new("Markers")
+                .scroll([false, true])
+                .open(&mut open)
+                .show(ctx, |ui| {
+                    ui.label("Select a marker to add a graph");
+                    ui.separator();
+                    let mut markers = query_markers.iter().map(|marker| marker.0.clone()).collect::<Vec<String>>();
+                    markers.sort();
+                    for marker in markers {
+                        ui.horizontal(|ui| {
+                            let (text, contained) = if traces.contains(&marker) {
+                                ("Remove Trace", true)    
+                            } else {
+                                ("Trace", false)
+                            };
+                            if ui.button(text).clicked() {
+                                match contained {
+                                    true =>  trace_event.send(TraceEvent::DespawnTraceEvent(marker.clone())),
+                                    false => trace_event.send(TraceEvent::AddTraceEvent(marker.clone())),
+                                };
+                            }
+                            ui.collapsing(marker.clone(), |ui| {
+                                if ui.button("Plot X").clicked() {
+                                    graphs.add_empty_graph(marker.to_string(), XYZ::X);
+                                }
+                                if ui.button("Plot Y").clicked() {
+                                    graphs.add_empty_graph(marker.to_string(), XYZ::Y);
+                                }
+                                if ui.button("Plot Z").clicked() {
+                                    graphs.add_empty_graph(marker.to_string(), XYZ::Z);
+                                }
+                            });
+                        });
+                    }
             });
+            if !open {
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
 
 impl XYZ {
-    fn to_string(&self) -> String {
+    fn _to_string(&self) -> String {
         match self {
             XYZ::X => "::x".to_string(),
             XYZ::Y => "::y".to_string(),
@@ -149,11 +176,12 @@ impl XYZ {
 
 pub(crate) fn fill_empty_graphs(
     mut event_writer: EventWriter<GraphEvent>,
-    graphs: ResMut<Graphs>,
+    mut graphs: ResMut<Graphs>,
 ){
     for (marker, graph) in graphs.empty_graphs.iter() {
         event_writer.send(GraphEvent::AddGraph(marker.to_string(), *graph));
     }
+    graphs.empty_graphs.clear();
 }
 
 pub(crate) fn graph_event_orchestrator(
@@ -212,7 +240,7 @@ pub(crate) fn represent_graphs(
 ){
     let ctx  = ctx.ctx_mut();
     let mut removed_graphs = Vec::new();
-    let markers = query_markers.iter().map(|marker| marker.0.clone()).collect::<Vec<String>>();
+    // let markers = query_markers.iter().map(|marker| marker.0.clone()).collect::<Vec<String>>();
 
     egui::SidePanel::right("Graphs")
         .show(ctx, |ui| {
@@ -221,7 +249,9 @@ pub(crate) fn represent_graphs(
             }
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for (i, (marker, graph)) in graphs.graphs.iter_mut().enumerate() {
+                let mut keys = graphs.graphs.keys().cloned().collect::<Vec<String>>();
+                keys.sort();
+                for (_i, marker) in keys.iter().enumerate() {
                     ui.collapsing(marker, |ui|{
                         if ui.button("Remove").clicked() {
                             removed_graphs.push(marker.clone());
@@ -232,6 +262,8 @@ pub(crate) fn represent_graphs(
                                 .view_aspect(2.0)
                                 .auto_bounds([true, true].into())
                         };
+                        let binding = Graph::new(vec![]);
+                        let graph = graphs.graphs.get(marker).unwrap_or(&binding);
                         let principal_line = Line::new(graph.get_primary_plot())
                             .color(egui::Color32::from_rgb(255, 0, 0));
                         let secondary_line = Line::new(graph.get_secondary_plot())

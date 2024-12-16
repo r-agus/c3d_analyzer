@@ -30,7 +30,7 @@ impl Plugin for GUIPlugin {
                         fill_graphs, represent_graphs
                     // DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
                     ).chain())
-            .add_systems(Update, (milestones_event_orchestrator, graph_event_orchestrator, fill_empty_graphs, MarkersWindow::draw_all))
+            .add_systems(Update, (milestones_event_orchestrator, graph_event_orchestrator, fill_empty_graphs, MarkersWindow::draw_floating_window))
             .init_resource::<Graphs>()
             .init_resource::<Milestones>()
             .add_event::<GraphEvent>();
