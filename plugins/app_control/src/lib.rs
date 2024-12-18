@@ -229,7 +229,7 @@ fn load_c3d(
                 let start_frame = asset.c3d.points.first_frame as f32;
                 for milestone in asset.c3d.events.iter() {
                     let milestone_frame = milestone.time * asset.c3d.points.frame_rate - start_frame;
-                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent(milestone_frame as usize));
+                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent(milestone_frame as usize + 1));
                 } 
 
                 println!("C3D loaded");
