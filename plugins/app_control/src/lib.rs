@@ -51,7 +51,6 @@ impl Plugin for ControlPlugin {
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
             .init_resource::<VectorsVisibility>()
-            .init_resource::<Labels>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
         println!("Control Plugin loaded");
     }
@@ -179,7 +178,6 @@ fn load_c3d(
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
     query_markers: Query<(Entity, &C3dMarkers)>,
-    mut all_labels: ResMut<Labels>
 ) {
     if let Some(_) = c3d_events.read().last() {
         
@@ -207,13 +205,9 @@ fn load_c3d(
         match c3d_asset {
             Some(asset) => {
                 // Spawn markers
-                all_labels.labels = get_all_labels(&asset.c3d);
-                let mut visibility = Vec::new();
-                for label in &all_labels.labels {
-                    let marker_visibility = spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
-                    visibility.push(marker_visibility);
+                for label in get_all_labels(&asset.c3d) {
+                    spawn_marker(&label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
                 }
-                all_labels.visible = visibility;
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);

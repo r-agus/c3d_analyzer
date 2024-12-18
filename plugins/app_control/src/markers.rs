@@ -5,16 +5,9 @@ use crate::*;
 pub struct C3dMarkers;  
 
 #[derive(Component, Clone, PartialEq)]
-/// This is the marker that represents the points in the C3D file, with its label
-pub struct Marker(pub String);
-
-#[derive(Resource, Default)]
-// TODO: Remove this.
-// This should be removed. Is a list of labels (Markers) and their visibility. Better solution would be to add a visibility component to the Marker component.
-pub(crate) struct Labels{
-    pub(crate) labels:  Vec<String>,
-    pub(crate) visible: Vec<Visibility>,
-}
+/// This is the marker that represents the points in the C3D file, with its label.
+/// The first parameter is the label of the marker, the second parameter is the visibility of the marker, specified on the config file.
+pub struct Marker(pub String, pub(crate) Visibility);
 
 #[derive(Event)]
 /// MarkerEvent contains the events related to the markers.
@@ -80,7 +73,7 @@ pub(crate) fn spawn_marker(
         Mesh3d(marker_mesh),
         MeshMaterial3d(marker_material),
         Visibility::from(marker_visibility),
-        Marker(label.to_string())
+        Marker(label.to_string(), marker_visibility)
     )).set_parent(parent);
     
     marker_visibility
@@ -92,7 +85,6 @@ pub(crate) fn represent_points(
     mut query_markers: Query<(&mut Transform, &mut Visibility, &Marker)>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
-    all_labels: Res<Labels>,
 ) {
     if state.render_frame {
         state.render_frame = false;
@@ -110,7 +102,7 @@ pub(crate) fn represent_points(
                 for &child in children.iter() {
                     let pos = query_markers.get_mut(child);
                     match pos {
-                        Ok((mut transform, mut vis, _)) => {
+                        Ok((mut transform, mut vis, marker)) => {
                             let x = point_data[(state.frame, i)][0] as f32 / 1000.0;
                             let y = point_data[(state.frame, i)][1] as f32 / 1000.0;
                             let z = point_data[(state.frame, i)][2] as f32 / 1000.0;
@@ -118,7 +110,7 @@ pub(crate) fn represent_points(
                             if x == 0.0 && y == 0.0 && z == 0.0 {
                                 *vis = Visibility::Hidden;
                             } else {
-                                *vis = all_labels.visible[i];
+                                *vis = marker.1;
                             }
                             
                             transform.translation = Vec3::new(x, y, z);

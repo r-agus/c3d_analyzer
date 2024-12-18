@@ -77,7 +77,7 @@ pub(crate) fn spawn_vectors_in_config(
                     base_color: Color::srgb_u8(255, 220, 0),
                         ..default()})),
                     Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
+                    Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.0.clone(), Visibility::Visible), vector.1.clone())));
                 commands.spawn((
                     Mesh3d(meshes.add(cone_mesh)),
                     MeshMaterial3d(materials.add(StandardMaterial {
@@ -85,7 +85,7 @@ pub(crate) fn spawn_vectors_in_config(
                         ..default()
                     })),
                     Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
-                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
+                    Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.0.clone(), Visibility::Visible), vector.1.clone())));
             }
         }
     }
