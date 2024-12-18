@@ -263,7 +263,11 @@ pub(crate) fn fill_graphs(
         .graphs
         .iter_mut()
         .for_each(|(_, graph)| {
-            let secondary_plot = graph.primary_plot[0..frame].to_vec();
+            let secondary_plot = if graph.primary_plot.len() >= frame {
+                graph.primary_plot[0..frame].to_vec()
+            } else {
+                Vec::new()
+            };
             graph.add_secondary_plot(secondary_plot);
         });
 }
