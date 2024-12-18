@@ -22,11 +22,11 @@ impl Plugin for WebFileDropPlugin {
     #[cfg(target_family = "wasm")]
     fn build(&self, app: &mut App) {
         {
-            use bevy_blob_loader::BlobLoaderPlugin;
+            // use bevy_blob_loader::BlobLoaderPlugin;
 
-            app.add_plugins(BlobLoaderPlugin)
-                .add_systems(Startup, init_js)
-                .add_systems(Update, read_dropped_files);
+            // app.add_plugins(BlobLoaderPlugin)
+            //     .add_systems(Startup, init_js)
+            //     .add_systems(Update, read_dropped_files);
         }
     }
 }
