@@ -1,0 +1,113 @@
+global_settings:
+  default_point_color: (128, 128, 128)
+  default_point_size: 0.5
+
+point_groups:
+  head: &head_group
+    points: [LFHD, RFHD, RBHD, LBHD, LFHD]
+    point_color: (255, 0, 0)
+    point_size: 0.5
+    description: "Puntos de la cabeza"
+  shoulders: &shoulders_group
+    points: [LSHO, RSHO]
+    point_color: (100, 100, 255)
+    point_size: 2.0
+    description: "Puntos de los codos"
+  rshoulders1:
+    points: [RSHO1, RSHO2, RSHO3]
+    description: "Puntos del hombro derechos"
+  lshoulders1: &lshoulders1_group
+    points: [LSHO1, LSHO2, LSHO3]
+    description: "Puntos del hombro izquierdo"
+  larm: &larm_group
+    points: [LUPA1, LUPA2, LFRA, LWRB]
+    description: "Puntos del brazo izquierdo"
+  rarm: &rarm_group
+    points: [RUPA1, RUPA2, RUPA3, RFRA, RWRB]
+    description: "Puntos del brazo derecho"
+  lhand: &lhand_group
+    points: [LWRB, LFIN]
+  rhand: &rhand_group
+    points: [RWRB, RFIN]
+    description: "Puntos de la mano derecha"
+  hands: &hands_group
+    points: [(L|R)WRB, .FIN]
+    description: "Puntos de las manos"
+  objects: &objects_group
+    points: [OBJ1, OBJ2, OBJ3, OBJ4, OBJ5, OBJ6, OBJA]
+    point_color: (100, 100, 100)
+    line_thickness: 1.5
+    join_color: (100, 100, 100)
+    description: "Objetos"
+  objects_re: &objects_re_group
+    points: ["OBJ[1-Z]"]
+    description: "Objetos (regex)"
+  lleg: &lleg_group
+    points: [LTHI, LKNE, LTIB, LANK, LHEE, LTOE]
+    description: "Puntos de la pierna izquierda"
+  rleg: &rleg_group
+    points: [RTHI, RKNE, RTIB, RANK, RHEE, RTOE]
+    description: "Puntos de la pierna derecha"
+  ball: &ball_group
+    points: [BALL]
+    point_color: (255, 255, 255)
+    point_size: 2.0
+    description: "Pelota"
+  errores:
+    points: [LWRB, Rfemur.*]
+    description: "Puntos que han dado error en el pasado"
+
+config1:
+  visible_points:
+    - *head_group
+    - *larm_group
+    - *rarm_group
+    - *shoulders_group
+    - *lleg_group
+    - *rleg_group
+    - *objects_re_group
+    - BALL
+    - LWRB
+  joins:
+    - *head_group
+    - [LUPA1, LUPA2, LFRA, LWRB]
+    - *rarm_group
+    - [CLAV, C7, T10, STRN, CLAV]
+    - [ThoraxS, ThoraxI, AbdI]
+    - [RSHO, LSHO]
+    - [LASI, RASI, RPSI, LPSI, LASI]
+    - *lleg_group
+    - *rleg_group
+    - *objects_group
+  vectors:
+    - point: OBJ1
+      vector: LVelOBJ1
+      scale: 1.5
+    - point: OBJ2
+      vector: LVelOBJ2
+      scale: 1
+    - point: ThoraxC
+      vector: WThorax
+      scale: 1.5
+
+solo_objetos:
+  visible_points:
+    - *objects_group
+    - BALL
+  joins:
+    - *objects_group
+  vectors:
+    - point: OBJ1
+      vector: LVelOBJ1
+      scale: 1.5
+  point_color: (255, 0, 0)
+  join_color: (255, 195, 0)
+  line_thickness: 2.0
+  point_size: 1.5
+
+errores:
+  visible_points:
+    - [errores]
+  point_color: (255, 0, 0)
+  join_color: (255, 195, 0)
+  point_size: 10.0
