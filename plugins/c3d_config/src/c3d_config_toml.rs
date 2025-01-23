@@ -422,11 +422,7 @@ fn parse_individual_config(
                     match point {
                         Value::String(point_name) => expanded_points.push(point_name.clone()),
                         Value::Array(group_ref) if (group_ref.len() == 1 && point_groups.is_some()) => {
-                            if let Some(Value::String(group_name)) = group_ref.get(0) {
-                                if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
-                                    expanded_points.extend(points.clone());
-                                }
-                            }
+                            expand_point_group(point_groups, &mut expanded_points, group_ref);
                         },
                         Value::Array(group_ref) => println!("Detected unexpected group reference: {:?}. Length of group reference: {}. point_groups: {:?}", group_ref, group_ref.len(), point_groups),
                         _ => {
@@ -492,6 +488,14 @@ fn parse_individual_config(
     config.point_size = table.get("point_size").and_then(|v| v.as_float());
 
     Ok(config)
+}
+
+fn expand_point_group(point_groups: &Option<HashMap<String, Vec<String>>>, expanded_points: &mut Vec<String>, group_ref: &Vec<Value>) {
+    if let Some(Value::String(group_name)) = group_ref.get(0) {
+        if let Some(points) = point_groups.as_ref().unwrap().get(group_name) {
+            expanded_points.extend(points.clone());
+        }
+    }
 }
 
 
