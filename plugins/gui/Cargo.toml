@@ -5,7 +5,7 @@ description = "Plugin to manage app's menus"
 edition = "2021"
 
 [dependencies]
-bevy = "^0.15.0"
+bevy = "0.15.1"
 bevy_egui = "0.31.1"
 metrics = "0.24.0"
 egui_plot = "0.29.0"
