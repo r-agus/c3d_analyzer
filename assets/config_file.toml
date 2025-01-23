@@ -47,15 +47,15 @@
 
     joins = [
         [["head"]],     # Unir todos los puntos de la cabeza
-        ["LUPA1", "LUPA2", "LFRA", "LWRB"], # Error con LWRB, RFemurIv, RFemurJv, RFemurKv 
-        [["rarm"]],
-        ["CLAV", "C7", "T10", "STRN", "CLAV"],
+        ["LUPA1", "LUPA2", "LFRA", "LWRB"],
+        { points = [["rarm"]], shape = {type = "semiCone", radius1 = 1.0, radius2 = 0.5}},
+        { points = ["CLAV", "C7", "T10", "STRN", "CLAV"], shape = { type = "Cylinder", radius = 1.0}},
         ["ThoraxS", "ThoraxI", "AbdI"],
         ["RSHO", "LSHO"],
         ["LASI", "RASI", "RPSI", "LPSI", "LASI"],
         [["lleg"]],
         [["rleg"]],
-        [["objects"]]
+        [["objects"]],
     ]
 
     vectors = [
