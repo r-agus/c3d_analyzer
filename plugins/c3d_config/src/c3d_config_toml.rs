@@ -9,12 +9,19 @@ use toml::{Value, map::Map};
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
-    joins: Option<Vec<Vec<String>>>,
+    joins: Option<(Vec<Vec<String>>, JoinShape)>, // Contains a list of joins between points and the shape of the join
     vectors: Option<HashMap<String, (String, f64)>>, // Map where the key is the point and the value is the vector name and the scale
     point_color: Option<Vec<u8>>,
     join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
     point_size: Option<f64>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub enum JoinShape {
+    Line,
+    Cylinder,
+    Cone,
 }
 
 impl Config {
@@ -32,7 +39,7 @@ impl Config {
     pub fn get_visible_points(&self) -> Option<&Vec<String>> {
         self.visible_points.as_ref()
     }
-    pub fn get_joins(&self) -> Option<&Vec<Vec<String>>> {
+    pub fn get_joins(&self) -> Option<&(Vec<Vec<String>>, JoinShape)> {
         self.joins.as_ref()
     }
     pub fn get_vectors(&self) -> Option<&HashMap<String, (String, f64)>> {
@@ -429,7 +436,7 @@ fn parse_individual_config(
                     }
                 }
                 if expanded_points.len() > 1 {
-                    config.joins.get_or_insert(Vec::new()).push(expanded_points);
+                    config.joins = Some((vec![expanded_points], JoinShape::Line));
                 }
             }
         }
