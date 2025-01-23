@@ -20,8 +20,8 @@ pub struct Config {
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum JoinShape {
     Line,
-    Cylinder,
-    Cone,
+    Cylinder(f64),      // Radius
+    SemiCone(f64, f64), // Radius of one end, radius of the other end
 }
 
 impl Config {
@@ -416,28 +416,63 @@ fn parse_individual_config(
 
     if let Some(Value::Array(joins)) = table.get("joins") {
         for join in joins {
-            if let Value::Array(points) = join {
-                let mut expanded_points = Vec::new();
-                for point in points {
-                    match point {
-                        Value::String(point_name) => expanded_points.push(point_name.clone()),
-                        Value::Array(group_ref) if (group_ref.len() == 1 && point_groups.is_some()) => {
-                            expand_point_group(point_groups, &mut expanded_points, group_ref);
-                        },
-                        Value::Array(group_ref) => println!("Detected unexpected group reference: {:?}. Length of group reference: {}. point_groups: {:?}", group_ref, group_ref.len(), point_groups),
-                        _ => {
-                            println!("Invalid point in joins: {:?}", point);
-                            continue
-                        },
-                    }
+            match join {
+                Value::Array(points) => {
+                    generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
                 }
-                if expanded_points.len() > 1 {
-                    if config.joins.is_none() {
-                        config.joins = Some((vec![expanded_points], JoinShape::Line));
-                    } else {
-                        config.joins.as_mut().unwrap().0.push(expanded_points);
+                Value::Table(join_table) => {
+                    let shape = join_table.get("shape");
+                    if let Some(shape) = shape {
+                        match shape {
+                            Value::String(s) if s.to_lowercase() == "line" => {
+                                if let Some(Value::Array(points)) = join_table.get("points") {
+                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                }
+                            }
+                            Value::Table(shapes_table) if shapes_table.contains_key("type") => {
+                                match shapes_table.get("type") {
+                                    Some(Value::String(s)) if s.to_lowercase() == "cylinder" => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            if let Some(Value::Float(radius)) = shapes_table.get("radius") {
+                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(radius.clone()));
+                                            } else {
+                                                println!("Cylinder join without radius: {:?}", shapes_table);
+                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                            }
+                                        }
+                                    }
+                                    Some(Value::String(s)) if s.to_lowercase() == "semicone" => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            match (join_table.get("radius1"), join_table.get("radius2")) {
+                                                (Some(Value::Float(radius1)), Some(Value::Float(radius2))) => {
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2));
+                                                }
+                                                _ => {
+                                                    println!("SemiCone join without proper radius: {:?}", join_table);
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                                },
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                        }
+                                        println!("Shape {:?} not implemented", shape)
+                                    },
+                                    
+                                }
+                            }
+                            _ => {
+                                if let Some(Value::Array(points)) = join_table.get("points") {
+                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                }
+                                println!("Shape {:?} not implemented", shape)
+                            },
+                        }
                     }
-                }
+                },
+                _ => (),
             }
         }
     }
@@ -488,6 +523,30 @@ fn parse_individual_config(
     config.point_size = table.get("point_size").and_then(|v| v.as_float());
 
     Ok(config)
+}
+
+fn generate_expanded_points(point_groups: &Option<HashMap<String, Vec<String>>>, config: &mut Config, points: &Vec<Value>, join_shape: JoinShape) {
+    let mut expanded_points = Vec::new();
+    for point in points {
+        match point {
+            Value::String(point_name) => expanded_points.push(point_name.clone()),
+            Value::Array(group_ref) if (group_ref.len() == 1 && point_groups.is_some()) => {
+                expand_point_group(point_groups, &mut expanded_points, group_ref);
+            },
+            Value::Array(group_ref) => println!("Detected unexpected group reference: {:?}. Length of group reference: {}. point_groups: {:?}", group_ref, group_ref.len(), point_groups),
+            _ => {
+                println!("Invalid point in joins: {:?}", point);
+                continue
+            },                        
+        }
+    }
+    if expanded_points.len() > 1 {
+        if config.joins.is_none() {
+            config.joins = Some((vec![expanded_points], join_shape));
+        } else {
+            config.joins.as_mut().unwrap().0.push(expanded_points);
+        }
+    }
 }
 
 fn expand_point_group(point_groups: &Option<HashMap<String, Vec<String>>>, expanded_points: &mut Vec<String>, group_ref: &Vec<Value>) {
