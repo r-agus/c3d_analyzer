@@ -1,10 +1,10 @@
-mod c3d_config;
+mod c3d_config_toml;
 
 use bevy::{asset::{io::Reader, Asset, AssetApp, AssetLoader, AssetServer, Assets, Handle, LoadContext}, prelude::{Commands, Local, Res, Resource}, reflect::TypePath};
 use bevy_app::{App, Plugin, Update};
 
 pub mod prelude {
-    pub use crate::c3d_config::*;
+    pub use crate::c3d_config_toml::*;
 }
 
 pub use prelude::*;
