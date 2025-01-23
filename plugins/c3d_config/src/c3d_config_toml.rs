@@ -436,7 +436,11 @@ fn parse_individual_config(
                     }
                 }
                 if expanded_points.len() > 1 {
-                    config.joins = Some((vec![expanded_points], JoinShape::Line));
+                    if config.joins.is_none() {
+                        config.joins = Some((vec![expanded_points], JoinShape::Line));
+                    } else {
+                        config.joins.as_mut().unwrap().0.push(expanded_points);
+                    }
                 }
             }
         }
