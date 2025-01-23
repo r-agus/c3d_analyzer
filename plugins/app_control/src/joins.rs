@@ -18,7 +18,7 @@ pub(crate) fn spawn_joins_in_config(
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ){
     if config_file.get_config(current_config).is_some(){
-        if let Some(joins) = config_file.get_config(current_config).unwrap().get_joins(){
+        if let Some((joins, _)) = config_file.get_config(current_config).unwrap().get_joins(){
             for join in joins {
                 for i in 0..join.len() - 1 {
                     let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
