@@ -1,7 +1,6 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use crate::*;
-use bevy::{core_pipeline::core_3d::graph, state::commands};
 use egui_plot::{Line, Plot};
 
 #[derive(Resource, Default)]
