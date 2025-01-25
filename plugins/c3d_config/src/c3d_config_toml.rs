@@ -434,24 +434,28 @@ fn parse_individual_config(
                                     Some(Value::String(s)) if s.to_lowercase() == "cylinder" => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
                                             if let Some(Value::Float(radius)) = shapes_table.get("radius") {
-                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(radius.clone()));
+                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(*radius));
                                             } else {
                                                 println!("Cylinder join without radius: {:?}", shapes_table);
                                                 generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
                                             }
+                                        } else {
+                                            println!("Cylinder join without points: {:?}", join_table);
                                         }
                                     }
                                     Some(Value::String(s)) if s.to_lowercase() == "semicone" => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
-                                            match (join_table.get("radius1"), join_table.get("radius2")) {
+                                            match (shapes_table.get("radius1"), shapes_table.get("radius2")) {
                                                 (Some(Value::Float(radius1)), Some(Value::Float(radius2))) => {
                                                     generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2));
                                                 }
                                                 _ => {
-                                                    println!("SemiCone join without proper radius: {:?}", join_table);
+                                                    println!("SemiCone join without proper radius: {:?}", shapes_table);
                                                     generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
                                                 },
                                             }
+                                        } else {
+                                            println!("SemiCone join without points: {:?}", join_table);
                                         }
                                     }
                                     _ => {
