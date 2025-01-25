@@ -431,6 +431,11 @@ fn parse_individual_config(
                             }
                             Value::Table(shapes_table) if shapes_table.contains_key("type") => {
                                 match shapes_table.get("type") {
+                                    Some(Value::String(s)) if s.to_lowercase() == "line" => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                        }
+                                    }
                                     Some(Value::String(s)) 
                                         if (s.to_lowercase() == "cylinder" || 
                                             s.to_lowercase() == "cilindro"
