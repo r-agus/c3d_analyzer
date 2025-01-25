@@ -9,7 +9,7 @@ use toml::{Value, map::Map};
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
-    joins: Option<(Vec<Vec<String>>, JoinShape)>, // Contains a list of joins between points and the shape of the join
+    joins: Option<Vec<(Vec<String>, JoinShape)>>, // Contains a list of joins between points and the shape of the join
     vectors: Option<HashMap<String, (String, f64)>>, // Map where the key is the point and the value is the vector name and the scale
     point_color: Option<Vec<u8>>,
     join_color: Option<Vec<u8>>,
@@ -39,7 +39,7 @@ impl Config {
     pub fn get_visible_points(&self) -> Option<&Vec<String>> {
         self.visible_points.as_ref()
     }
-    pub fn get_joins(&self) -> Option<&(Vec<Vec<String>>, JoinShape)> {
+    pub fn get_joins(&self) -> Option<&Vec<(Vec<String>, JoinShape)>> {
         self.joins.as_ref()
     }
     pub fn get_vectors(&self) -> Option<&HashMap<String, (String, f64)>> {
@@ -431,24 +431,47 @@ fn parse_individual_config(
                             }
                             Value::Table(shapes_table) if shapes_table.contains_key("type") => {
                                 match shapes_table.get("type") {
-                                    Some(Value::String(s)) if s.to_lowercase() == "cylinder" => {
+                                    Some(Value::String(s)) 
+                                        if (s.to_lowercase() == "cylinder" || 
+                                            s.to_lowercase() == "cilindro"
+                                    ) => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
-                                            if let Some(Value::Float(radius)) = shapes_table.get("radius") {
-                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(*radius));
-                                            } else {
-                                                println!("Cylinder join without radius: {:?}", shapes_table);
-                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                            match shapes_table.get("radius") {
+                                                Some(Value::Float(radius)) => generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(*radius)),
+                                                Some(Value::Integer(radius)) => generate_expanded_points(point_groups, &mut config, points, JoinShape::Cylinder(*radius as f64)),                                      
+                                                _ => {
+                                                    println!("Cylinder join without radius: {:?}", shapes_table);
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                                }
                                             }
                                         } else {
                                             println!("Cylinder join without points: {:?}", join_table);
                                         }
                                     }
-                                    Some(Value::String(s)) if s.to_lowercase() == "semicone" => {
+                                    Some(Value::String(s)) 
+                                        if (s.to_lowercase() == "semicone" ||
+                                            s.to_lowercase() == "semicono" ||
+                                            s.to_lowercase() == "cone frustum" ||
+                                            s.to_lowercase() == "cono truncado" ||
+                                            s.to_lowercase() == "partial cone" ||
+                                            s.to_lowercase() == "cono parcial" ||
+                                            s.to_lowercase() == "truncated cone" ||
+                                            s.to_lowercase() == "cono truncado"
+                                    ) => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
                                             match (shapes_table.get("radius1"), shapes_table.get("radius2")) {
                                                 (Some(Value::Float(radius1)), Some(Value::Float(radius2))) => {
                                                     generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2));
-                                                }
+                                                },
+                                                (Some(Value::Integer(radius1)), Some(Value::Integer(radius2))) => {
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2 as f64));
+                                                },
+                                                (Some(Value::Float(radius1)), Some(Value::Integer(radius2))) => {
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2 as f64));
+                                                },
+                                                (Some(Value::Integer(radius1)), Some(Value::Float(radius2))) => {
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2));
+                                                },
                                                 _ => {
                                                     println!("SemiCone join without proper radius: {:?}", shapes_table);
                                                     generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
@@ -546,9 +569,9 @@ fn generate_expanded_points(point_groups: &Option<HashMap<String, Vec<String>>>,
     }
     if expanded_points.len() > 1 {
         if config.joins.is_none() {
-            config.joins = Some((vec![expanded_points], join_shape));
+            config.joins = Some(vec![(expanded_points, join_shape)]);
         } else {
-            config.joins.as_mut().unwrap().0.push(expanded_points);
+            config.joins.as_mut().unwrap().push((expanded_points, join_shape));
         }
     }
 }
