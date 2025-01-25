@@ -22,6 +22,7 @@ pub enum JoinShape {
     Line,
     Cylinder(f64),      // Radius
     SemiCone(f64, f64), // Radius of one end, radius of the other end
+    RectangularPrism(f64, f64, Option<HashMap<String, (String, bool)>>), // Width, height, mapa con vectores de orientación: la clave es el punto, el valor es el nombre del vector y un booleano que indica si es visible
 }
 
 impl Config {
@@ -452,7 +453,22 @@ fn parse_individual_config(
                                         } else {
                                             println!("Cylinder join without points: {:?}", join_table);
                                         }
-                                    }
+                                    },
+                                    Some(Value::String(s)) 
+                                        if (s.to_lowercase() == "cone" ||
+                                            s.to_lowercase() == "cono"
+                                    ) => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            match shapes_table.get("radius") {
+                                                Some(Value::Float(radius)) => generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius, 0.0)),
+                                                Some(Value::Integer(radius)) => generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius as f64, 0.0)),
+                                                _ => {
+                                                    println!("Cone join without proper radius: {:?}", shapes_table);
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(0.5, 0.0));
+                                                },
+                                            }
+                                        }
+                                    },
                                     Some(Value::String(s)) 
                                         if (s.to_lowercase() == "semicone" ||
                                             s.to_lowercase() == "semicono" ||
@@ -465,18 +481,14 @@ fn parse_individual_config(
                                     ) => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
                                             match (shapes_table.get("radius1"), shapes_table.get("radius2")) {
-                                                (Some(Value::Float(radius1)), Some(Value::Float(radius2))) => {
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2));
-                                                },
-                                                (Some(Value::Integer(radius1)), Some(Value::Integer(radius2))) => {
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2 as f64));
-                                                },
-                                                (Some(Value::Float(radius1)), Some(Value::Integer(radius2))) => {
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2 as f64));
-                                                },
-                                                (Some(Value::Integer(radius1)), Some(Value::Float(radius2))) => {
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2));
-                                                },
+                                                (Some(Value::Float(radius1)), Some(Value::Float(radius2))) => 
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2)),
+                                                (Some(Value::Integer(radius1)), Some(Value::Integer(radius2))) => 
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2 as f64)),
+                                                (Some(Value::Float(radius1)), Some(Value::Integer(radius2))) =>
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1, *radius2 as f64)),
+                                                (Some(Value::Integer(radius1)), Some(Value::Float(radius2))) =>
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(*radius1 as f64, *radius2)),
                                                 _ => {
                                                     println!("SemiCone join without proper radius: {:?}", shapes_table);
                                                     generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
@@ -485,10 +497,71 @@ fn parse_individual_config(
                                         } else {
                                             println!("SemiCone join without points: {:?}", join_table);
                                         }
-                                    }
+                                    },
+                                    Some(Value::String(s))
+                                        if (s.to_lowercase() == "prisma rectangular" ||
+                                            s.to_lowercase() == "rectangular prism" ||
+                                            s.to_lowercase() == "prisma" ||
+                                            s.to_lowercase() == "prism" ||
+                                            s.to_lowercase() == "paralelepipedo" ||
+                                            s.to_lowercase() == "paralelepípedo" ||
+                                            s.to_lowercase() == "parallelepiped"
+                                    ) => {
+                                        if let Some(Value::Array(points)) = join_table.get("points") {
+                                            let width = shapes_table.get("width").and_then(Value::as_float).or_else(|| shapes_table.get("width").and_then(Value::as_integer).map(|v| v as f64));
+                                            let height = shapes_table.get("height").and_then(Value::as_float).or_else(|| shapes_table.get("height").and_then(Value::as_integer).map(|v| v as f64));
+                                            let points_len = points.len();
+                                            let orientation_vectors = shapes_table.get("vectors").and_then(|v| {
+                                                v.as_array().map(|arr| {
+                                                    arr.iter().filter_map(|val| val.as_str().map(|s| s.to_string())).collect::<Vec<String>>()
+                                                })
+                                            });
+                                            
+                                            if width.is_none() || height.is_none() {
+                                                println!("Rectangular prism join without proper width or height: {:?}", shapes_table);
+                                                generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                                continue;
+                                            }
+                                            
+                                            let width = width.unwrap();
+                                            let height = height.unwrap();
+
+                                            match orientation_vectors {
+                                                Some(vectors) if vectors.len() == points_len - 1 => {
+                                                    let orientation_vectors_visibility = shapes_table.get("vectors_visibility").and_then(Value::as_array).map(|v| v.iter().map(|v| v.as_bool().unwrap_or(true)).collect::<Vec<bool>>()); 
+                                                    match orientation_vectors_visibility {
+                                                        Some(visibilities) if visibilities.len() == points_len - 1 => {
+                                                            let tuple: Vec<(String, bool)> = vectors.iter().zip(visibilities.iter()).map(|(v, b)| (v.clone(), *b)).collect();
+                                                            let mut map = HashMap::new();
+                                                            for i in 0..points_len - 1 {
+                                                                map.insert(points[i].as_str().unwrap().to_string(), tuple[i].clone());
+                                                            }
+                                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, Some(map)));
+                                                        },
+                                                        _ => {
+                                                            println!("Rectangular prism join without proper vectors visibility: {:?}", shapes_table);
+                                                            let tuple: Vec<(String, bool)> = vectors.iter().map(|v| (v.clone(), true)).collect();
+                                                            let mut map = HashMap::new();
+                                                            for i in 0..points_len - 1 {
+                                                                map.insert(points[i].as_str().unwrap().to_string(), tuple[i].clone());
+                                                            }
+                                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, Some(map)));
+                                                        },
+                                                    }   
+                                                },
+                                                Some(vectors) => {
+                                                    println!("Rectangular prism join without proper vectors: {:?}", vectors);
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None));
+                                                },
+                                                None => {
+                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None));
+                                                }
+                                            }
+                                        }
+                                    },
                                     _ => {
                                         if let Some(Value::Array(points)) = join_table.get("points") {
-                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::Line);
+                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::SemiCone(0.75, 0.25));
                                         }
                                         println!("Shape {:?} not implemented", shape)
                                     },
