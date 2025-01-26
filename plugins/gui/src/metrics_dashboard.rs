@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::*;
+use bevy::ecs::event;
 use egui_plot::{Line, Plot};
 
 #[derive(Resource, Default)]
@@ -223,7 +224,6 @@ pub(crate) fn graph_event_orchestrator(
     mut event_reader: EventReader<GraphEvent>,
     mut graphs: ResMut<Graphs>,
     mut commands: Commands,
-    mut ctx: EguiContexts,
     c3d_state: Res<bevy_c3d_mod::C3dState>,
     c3d_assets: Res<Assets<bevy_c3d_mod::C3dAsset>>,
     query_markers: Query<(&Marker, &Transform)>,
@@ -243,7 +243,6 @@ pub(crate) fn graph_event_orchestrator(
                 graphs.restart_graphs();
             }
             GraphEvent::CreateMarkersWindow => {
-                let ctx = ctx.ctx_mut();
                 if query_windows.iter().count() == 0 {
                     commands.spawn(MarkersWindow::new());
                 }
@@ -274,17 +273,15 @@ pub(crate) fn fill_graphs(
 pub(crate) fn represent_graphs(
     mut graphs: ResMut<Graphs>,
     mut ctx: EguiContexts,
-    mut commands: Commands,
-    query_markers: Query<&Marker>
+    mut event_writer: EventWriter<GraphEvent>,
 ){
     let ctx  = ctx.ctx_mut();
     let mut removed_graphs = Vec::new();
-    // let markers = query_markers.iter().map(|marker| marker.0.clone()).collect::<Vec<String>>();
 
     egui::SidePanel::right("Graphs")
         .show(ctx, |ui| {
             if ui.button("Add graph").clicked() {
-                commands.spawn(MarkersWindow::new());
+                event_writer.send(GraphEvent::CreateMarkersWindow);
             }
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
