@@ -1,7 +1,9 @@
 use bevy::prelude::*;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use control_plugin::ControlPlugin;
 use gui_plugin::GUIPlugin;
+use bevy_blendy_cameras::{
+    BlendyCamerasPlugin, FlyCameraController, OrbitCameraController,
+};
 
 use wasm_bindgen::prelude::*;
 
@@ -11,7 +13,7 @@ fn main() {
 
     App::new()
         .add_plugins(ControlPlugin)
-        .add_plugins(PanOrbitCameraPlugin)
+        .add_plugins(BlendyCamerasPlugin)
         .add_plugins(GUIPlugin) // TODO: move this to the control_plugin
         .add_systems(Startup, setup)
         .run();
@@ -19,8 +21,6 @@ fn main() {
 
 fn setup(
     mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Spawn a light and the camera
     commands.spawn((
@@ -41,14 +41,22 @@ fn setup(
             clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
             ..default()
         },
-        PanOrbitCamera {
+        OrbitCameraController{
+            orbit_sensitivity: 0.5,
+            pan_sensitivity: 1.0,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
-            touch_enabled: true,
-            reversed_zoom: false,
+            is_enabled: true,
+            modifier_pan: None,
+            // zoom_to_mouse_position: todo!(),
+            auto_depth: false,
             ..default()
         },
-        Transform::from_translation(translation),
+        FlyCameraController {
+            is_enabled: false,
+            ..default()
+        },
+        Transform::from_translation(translation).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 
