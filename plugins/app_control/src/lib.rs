@@ -1,11 +1,20 @@
 mod file_drop;
 mod mouse_keyboard;
+pub mod vectors;
+pub mod markers;
+pub mod joins;
+pub mod traces;
+
+use std::collections::HashMap;
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
-use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
+use vectors::*;
+use markers::*;
+use joins::*;
+use traces::*;
 
 pub struct ControlPlugin;
 
@@ -18,7 +27,7 @@ impl Plugin for ControlPlugin {
                             ..default()
                         }
                 )))
-            .add_plugins((C3dPlugin, DefaultPickingPlugins))
+            .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
@@ -32,15 +41,16 @@ impl Plugin for ControlPlugin {
                 .run_if(|state: Res<AppState>| -> bool { (state.c3d_file_loaded && state.play) || state.render_frame })
                 .run_if(|state: Res<AppState>| -> bool { state.fixed_frame_rate.is_some() && state.render_at_fixed_frame_rate }))
             .add_systems(Update, (represent_joins, represent_vectors))
-            .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, despawn_all_markers_event))
+            .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, vector_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
             .add_event::<MarkerEvent>()
             .add_event::<JoinEvent>()
             .add_event::<TraceEvent>()
+            .add_event::<VectorEvent>()
             .add_event::<MilestoneEvent>()
-            .add_event::<ReloadRegistryEvent>()
             .init_resource::<AppState>()
             .init_resource::<GuiSidesEnabled>()
+            .init_resource::<VectorsVisibility>()
             .insert_resource(Time::<Fixed>::from_hz(250.));          // default frame rate, can be changed by the user
         println!("Control Plugin loaded");
     }
@@ -83,38 +93,6 @@ pub struct AppState {
     pub traces: TraceInfo,
 }
 
-#[derive(Clone, Default, Debug)]
-/// TraceInfo contains the information of the traces to be represented.
-/// A trace is the representation of a point along the frames in a given range, with no time information.
-/// start_frame: The frame where the trace starts.
-/// end_frame: The frame where the trace ends.
-/// points: The points that are part of the trace.
-pub struct TraceInfo {
-    pub start_frame: f32,
-    pub end_frame: f32,
-    pub points: Vec<String>,
-}
-
-#[derive(Event)]
-/// MarkerEvent contains the events related to the markers.
-pub enum MarkerEvent {
-    DespawnAllMarkersEvent,
-}
-
-#[derive(Event)]
-pub enum JoinEvent {
-    DespawnAllJoinsEvent,
-    DespawnJoinEvent(String, String),
-}
-
-#[derive(Event)]
-/// TraceEvent contains the events related to the traces.
-pub enum TraceEvent {
-    UpdateTraceEvent,
-    DespawnTraceEvent(String),
-    DespawnAllTracesEvent,
-}
-
 #[derive(Event)]
 /// MilestoneEvent contains the events related to the milestones.
 pub enum MilestoneEvent {
@@ -122,9 +100,6 @@ pub enum MilestoneEvent {
     RemoveMilestoneEvent(usize),
     RemoveAllMilestonesEvent,
 }
-
-#[derive(Event)]
-pub struct ReloadRegistryEvent;
 
 #[derive(Resource, Default, Debug)]
 /// GuiSidesEnabled contains the information of the GUI sides that are enabled.
@@ -134,28 +109,6 @@ pub struct GuiSidesEnabled {
     /// The graphs contains the variation of a point among the frames, for example, the position of a marker.
     pub graphs: bool,
 }
-
-
-#[derive(Component)]
-/// This is the marker that represents the points in the C3D file, with its label
-pub struct Marker(pub String);
-
-#[derive(Component)]
-/// This represents the joins between the points in the C3D file. It contains the labels of the points that are joined.
-pub struct Join(String, String);
-
-#[derive(Component)]
-/// This represents a vector. It contains the labels of the points that are joined. First point is the origin, second point is the vector, third parameter is the scale.
-pub struct Vector(Marker, Marker, f64);
-
-#[derive(Component)]
-/// This is the trace of a point along the frames
-pub struct Trace(pub String);
-
-#[derive(Component)]
-/// This is a bunch of markers (parent of Marker)
-pub struct C3dMarkers;  
-
 
 impl AppState {
     pub fn default() -> Self {
@@ -193,37 +146,12 @@ impl AppState {
     }
 }
 
-impl TraceInfo {
-    pub fn default() -> Self {
-        TraceInfo {
-            start_frame: 0.0,
-            end_frame: 0.0,
-            points: Vec::new(),
-        }
-    }
-
-    pub fn is_trace_added (
-        &self,
-        trace: String,
-    ) -> bool {
-        self.points.contains(&trace)
-    }
-
-    pub fn add_point(&mut self, point: String) {
-        self.points.push(point);
-    }
-
-    pub fn remove_point(&mut self, point: String) {
-        self.points.retain(|x| x != &point);
-    }
-}
-
 fn setup(
     mut state: ResMut<AppState>,
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
     state.frame = 0;
-    state.c3d_path =  "golpeo3.c3d".to_string();
+    state.c3d_path =  "".to_string();
     state.current_config = Some("config1".to_string());
     state.config_path = "config_file.toml".to_string();
     state.reload_c3d = true;
@@ -238,182 +166,11 @@ fn setup(
     println!("Control PluginSetup done");
 }
 
-fn spawn_marker(
-    label: &str,
-    current_config: &str,
-    config: &Option<ConfigFile>,
-    parent: Entity,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-){
-    let matrix = Mat4::from_scale_rotation_translation(
-        Vec3::new(1.0, 1.0, 1.0),
-        Quat::from_rotation_y(0.0),
-        Vec3::new(0.0, 0.0, 0.0),
-    );
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(
-                // Obtain radius from get_point_size
-                Sphere::new(match config.as_ref() {
-                    Some(config) => {
-                        if let Some(size) = config.get_point_size(label, current_config) {
-                            0.014 * size as f32
-                        } else {
-                            0.014
-                        }
-                    }
-                    None => { 0.014 }
-                })
-                .mesh(),
-            ),
-            material: materials.add(StandardMaterial {
-                // Obtain color from get_point_color
-                base_color: match config.as_ref() {
-                    Some(config) => {
-                        if let Some(color) = config.get_point_color(label, current_config){
-                            if color.len() == 3 {
-                                Color::srgb_u8(color[0], color[1], color[2])
-                            } else if color.len() == 4 {
-                                Color::srgba_u8(color[0], color[1], color[2], color[3])
-                            } else {
-                                Color::srgb(0.0, 0.0, 1.0)
-                            }
-                        } else {
-                            Color::srgb(0.0, 0.0, 1.0)
-                        }
-                    }
-                    None => { Color::srgb(0.0, 0.0, 1.0) }
-                },
-                ..default()
-            }),
-            transform: Transform::from_matrix(matrix),
-            visibility: match config.as_ref() {
-                Some(config) => {
-                    if config.contains_point_regex(current_config, label) {
-                        Visibility::Visible
-                    } else {
-                        Visibility::Hidden
-                    }
-                }
-                None => { Visibility::Visible }
-            },
-            ..default()
-        },
-        Marker(label.to_string()),
-    )).set_parent(parent);
-}
-
-fn spawn_joins_in_config(
-    current_config: &str,
-    config_file: &ConfigFile,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-){
-    if config_file.get_config(current_config).is_some(){
-        if let Some(joins) = config_file.get_config(current_config).unwrap().get_joins(){
-            for join in joins {
-                for i in 0..join.len() - 1 {
-                    let line_thickness = config_file.get_line_thickness(&join[i], &join[i+1], &current_config).unwrap_or(0.01) as f32;
-                    let line_color = config_file.get_join_color(&join[i], &join[i+1], &current_config).unwrap_or(vec![0, 255, 0]);
-                    commands.spawn((PbrBundle {
-                        mesh: meshes.add(
-                            Cylinder::new(
-                                if line_thickness > 0.01 { line_thickness * 0.01 } else { 0.01 },
-                                1.0)
-                        ),
-                        material: materials.add(StandardMaterial {
-                            base_color: if line_color.len() == 3 {
-                                            Color::srgb_u8(line_color[0], line_color[1],line_color[2])
-                                        } else if line_color.len() == 4 {
-                                            Color::srgba_u8(line_color[0], line_color[1], line_color[2], line_color[3])
-                                        } else{
-                                            Color::srgb_u8(0, 127, 0)
-                                        },
-                            ..default()
-                        }),
-                        transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                        visibility: Visibility::Visible,
-                        ..default()
-                    }, Join(join[i].clone(), join[i+1].clone())));
-                }
-            }
-        }
-    }
-}
-
-fn spawn_vectors_in_config(
-    current_config: &str,
-    config_file: &ConfigFile,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-){
-    if config_file.get_config(current_config).is_some(){
-        if let Some(vectors) = config_file.get_config(current_config).unwrap().get_vectors(){
-            for (point, vector) in vectors {
-                let default_cylinder_height = 1.0;
-                let mut cone_mesh = Mesh::from(Cone {
-                    radius: 0.05,
-                    height: 0.2,
-                });
-                let mut cylinder_mesh = Mesh::from(Cylinder::new(
-                    0.01,
-                    default_cylinder_height,    
-                ));
-
-                // Extract and modify positions
-                if let Some(positions) = cone_mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-                    let modified_positions: Vec<[f32; 3]> = positions
-                        .as_float3()
-                        .unwrap_or(&[[0.0, 0.0, 0.0]])
-                        .iter()
-                        .map(|&[x, y, z]| [x, y + default_cylinder_height/2.0, z]) // cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
-                        .collect();
-
-                    // Replace the positions attribute
-                    cone_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, modified_positions);
-                }
-                
-                cylinder_mesh.merge(&cone_mesh);
-
-                commands.spawn((
-                    PbrBundle {
-                        mesh: meshes.add(cylinder_mesh),
-                        material: materials.add(StandardMaterial {
-                        base_color: Color::srgb_u8(255, 220, 0),
-                        ..default()
-                            }),
-                    transform: Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                    visibility: Visibility::Visible,
-                    ..default()
-                    }, 
-                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
-                commands.spawn((
-                    PbrBundle {
-                        mesh: meshes.add(cone_mesh),
-                        material: materials.add(StandardMaterial {
-                            base_color: Color::srgb_u8(255, 220, 0),
-                            ..default()
-                        }),
-                        transform: Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
-                        visibility: Visibility::Visible,
-                        ..default()
-                    },
-                    Vector(Marker(point.clone()), Marker(vector.0.clone()), vector.1.clone())));
-            }
-        }
-    }
-}
-
-
 fn load_c3d(
     mut c3d_events: EventReader<C3dLoadedEvent>,
     mut milestones_events: EventWriter<MilestoneEvent>,
     c3d_state: ResMut<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
+    mut c3d_assets: ResMut<Assets<C3dAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
@@ -426,14 +183,12 @@ fn load_c3d(
         
         despawn_all_markers(&mut commands, &query_markers);
 
-        let c3d_asset = c3d_assets.get(&c3d_state.handle);
+        let c3d_asset = c3d_assets.get_mut(&c3d_state.handle);
         let points = 
             commands
                 .spawn((
-                    PbrBundle {
-                        visibility: Visibility::Hidden,
-                        ..default()
-                    },
+                    Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+                    Visibility::from(Visibility::Hidden),
                     C3dMarkers  // This is a bunch of markers
                 ))
                 .id();
@@ -450,17 +205,16 @@ fn load_c3d(
         match c3d_asset {
             Some(asset) => {
                 // Spawn markers
-                for label in &asset.c3d.points.labels {
-                    spawn_marker(label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials); 
+                for label in get_all_labels(&asset.c3d) {
+                    spawn_marker(&label, current_config, &config_file, points, &mut commands, &mut meshes, &mut materials);
                 }
 
                 let current_config = app_state.current_config.clone().unwrap_or_default();
                 app_state.frame_rate = Some(asset.c3d.points.frame_rate);
-                println!("Frame rate: {:?}", asset.c3d.points.frame_rate);
                 
                 let num_frames = asset.c3d.points.size().0;
                 app_state.num_frames = num_frames;
-                app_state.traces.end_frame = num_frames as f32 / 20.0; 
+                app_state.traces.end_frame = num_frames as f32 - 20.0; 
 
                 if app_state.fixed_frame_rate.is_none() {
                     app_state.fixed_frame_rate = Some(asset.c3d.points.frame_rate as f64);
@@ -472,8 +226,10 @@ fn load_c3d(
                 }
 
                 // Send milestones to the GUI
+                let start_frame = asset.c3d.points.first_frame as f32;
                 for milestone in asset.c3d.events.iter() {
-                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent((milestone.time * app_state.frame_rate.unwrap_or(1.0)) as usize));
+                    let milestone_frame = milestone.time * asset.c3d.points.frame_rate - start_frame;
+                    milestones_events.send(MilestoneEvent::AddMilestoneFromC3dEvent(milestone_frame as usize + 1));
                 } 
 
                 println!("C3D loaded");
@@ -485,260 +241,38 @@ fn load_c3d(
     }
 }
 
-pub fn represent_points(
-    mut state: ResMut<AppState>,
-    query_points: Query<(&C3dMarkers, &Children)>,          // C3dMarkers and their children (Markers)
-    mut query_markers: Query<(&mut Transform, &Marker)>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-) {
-    if state.render_frame {
-        state.render_frame = false;
-    }
+pub(crate) fn get_all_labels(
+    c3d: &C3d,
+) -> Vec<String> {
+    let mut labels = c3d.points.labels.clone();
+    if let Some(group) = c3d.parameters.get_group("POINT"){
+        let other_labels_params = group
+            .iter()
+            .filter(|(k, _)| k.starts_with("LABEL"))
+            .collect::<HashMap<_, _>>();
 
-    let asset = c3d_assets.get(&c3d_state.handle);
+        let mut other_labels_params = other_labels_params.into_iter().collect::<Vec<_>>();
+        other_labels_params.sort_by_key(|(k, _)| *k);
 
-    match asset {
-        Some(asset) => {
-            let point_data = &asset.c3d.points;
-            let num_frames = point_data.size().0;
-            let mut i = 0;
-            
-            //state.num_frames = num_frames;
-
-            for (_points, children) in query_points.iter() {
-                for &child in children.iter() {
-                    let pos = query_markers.get_mut(child);
-                    match pos {
-                        Ok((mut transform, _)) => {
-                            transform.translation = Vec3::new(
-                                point_data[(state.frame, i)][0] as f32 / 1000.0,
-                                point_data[(state.frame, i)][1] as f32 / 1000.0,
-                                point_data[(state.frame, i)][2] as f32 / 1000.0,
-                            );
-                            i += 1;
-                        }
-                        Err(_) => {}
-                    }
-                }         
-            }
-            state.frame += 1;
-            if state.frame >= num_frames {
-                state.frame = 0;
-            }   
-        }
-        None => {}
-    }
-}
-
-pub fn represent_joins(
-    mut join_event: EventWriter<JoinEvent>,
-    markers_query: Query<(&Marker, &Transform)>,
-    mut joins_query: Query<(&mut Transform, &Join), Without<Marker>>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-) {
-    let asset = c3d_assets.get(&c3d_state.handle);
-
-    match asset {
-        Some(_asset) => {
-            for (mut transform, join) in joins_query.iter_mut() {
-                let marker1 = get_marker_position_on_frame(&join.0, &markers_query);
-                let marker2 = get_marker_position_on_frame(&join.1, &markers_query);
-                match (marker1, marker2) {
-                    (Some(marker1), Some(marker2)) => {
-                        let position = (marker1 + marker2) / 2.0;
-                        let length = (marker1 - marker2).length();
-                        let direction = (marker1 - marker2).normalize();
-                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
-                        let scale = Vec3::new(0.5, length, 0.5);
-                        transform.translation = position;
-                        transform.rotation = rotation;
-                        transform.scale = scale;
-                    }
-                    _ => {
-                        join_event.send(JoinEvent::DespawnJoinEvent(join.0.clone(), join.1.clone()));
-                    }
-                }
-            }      
-        },
-        None => {}
-    }
-}
-
-pub fn represent_vectors(
-    markers_query: Query<(&Marker, &Transform)>,
-    mut vectors_query: Query<(&Vector, &mut Transform, &mut Visibility), Without<Marker>>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-){
-    let asset = c3d_assets.get(&c3d_state.handle);
-
-    match asset {
-        Some(_asset) => {
-            for (vector, mut transform, mut visibility) in vectors_query.iter_mut() {
-                let marker1 = get_marker_position_on_frame(&vector.0.0, &markers_query);
-                let marker2 = get_marker_position_on_frame(&vector.1.0, &markers_query);
-                match (marker1, marker2) {
-                    (Some(marker1), Some(marker2)) => {
-                        let length = 50.0 * marker2.length() * vector.2 as f32;
-                        let direction = marker2.normalize_or_zero();
-                        let position = marker1 + direction * length / 2.0;
-                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction);
-                        let scale = Vec3::new(1.0, length, 1.0);
-                        transform.translation = position;
-                        transform.rotation = rotation;
-                        transform.scale = scale;
-                        if marker2.length() > 0.0005 { // Avoids anoying plate (cone base) when vector is too small
-                            *visibility = Visibility::Visible;
-                        } else {
-                            *visibility = Visibility::Hidden;
-                        }
-                    }
-                    _ => {
-
-                    }
-                }
-            }      
-        },
-        None => {}
-    }
-}
-
-pub fn joins_event_orchestrator(
-    mut events: EventReader<JoinEvent>,
-    mut commands: Commands,
-    query_joins: Query<(Entity, &Join)>,
-){
-    if let Some(join_event) = events.read().last() {
-        match join_event {
-            JoinEvent::DespawnAllJoinsEvent => {
-                despawn_all_joins(&mut commands, &query_joins);
-            }
-            JoinEvent::DespawnJoinEvent(point1, point2) => {
-                delete_join_event(&mut commands, &query_joins, point1, point2);
+        for (_, param) in other_labels_params {
+            match param.data.clone() {
+                ParameterData::Char(vec) => {
+                    let dim = param.dimensions.clone();
+                    let label = vec
+                        .chunks(dim[0] as usize)
+                        .map(|chunk| chunk.iter().collect::<String>())
+                        .collect::<Vec<String>>();
+                    let label = label
+                        .iter()
+                        .map(|s| s.trim().to_string())
+                        .collect::<Vec<String>>();
+                    labels.extend(label);
+                },
+                _ => {}
             }
         }
     }
-}
-
-fn delete_join_event(
-    commands: &mut Commands,
-    query_joins: &Query<(Entity, &Join)>,
-    point1: &str,
-    point2: &str,
-) {
-    for (entity, join) in query_joins.iter() {
-        if join.0 == point1 && join.1 == point2 {
-            commands.entity(entity).despawn_recursive();
-        }
-    }
-}
-
-/// Orchestrates the events related to the markers
-pub fn traces_event_orchestrator(
-    mut events: EventReader<TraceEvent>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut state: ResMut<AppState>,
-    c3d_state: Res<C3dState>,
-    c3d_assets: Res<Assets<C3dAsset>>,
-    query_positions: Query<(&Marker, &Transform)>,
-    query_delete_trace: Query<(Entity, &Trace)>
-){
-    //for trace_event in events.read() {
-    if let Some(trace_event) = events.read().last() {
-        match trace_event {
-            TraceEvent::UpdateTraceEvent => {
-                despawn_all_traces(&mut commands, query_delete_trace);
-                represent_traces(&mut commands, &mut meshes, &mut materials, &state, &c3d_state, &c3d_assets, &query_positions);
-            }
-            TraceEvent::DespawnAllTracesEvent => {
-                delete_all_traces_event(&mut commands, &mut state, query_delete_trace);
-            }
-            TraceEvent::DespawnTraceEvent(trace) => {
-                delete_trace_event(&mut commands, state, query_delete_trace,trace);
-            }
-        }
-    }
-}
-
-fn represent_traces(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    state: &ResMut<AppState>,
-    c3d_state: &Res<C3dState>,
-    c3d_assets: &Res<Assets<C3dAsset>>,
-    query_positions: &Query<(&Marker, &Transform)>,
-) {
-    for point in &state.traces.points {
-        let positions = get_marker_position_on_frame_range(point, &c3d_state, &c3d_assets, &query_positions, state.traces.start_frame as usize, state.traces.end_frame as usize);
-        match positions {
-            Some(positions) => {
-                for position in positions {
-                    commands.spawn((
-                        PbrBundle {
-                            mesh: meshes.add(
-                                Sphere::new(0.005).mesh()
-                            ),
-                            material: materials.add(StandardMaterial {
-                                base_color: Color::srgb_u8(49, 0, 69),
-                                ..default()
-                            }),
-                            transform: Transform::from_translation(position),
-                            visibility: Visibility::Visible,
-                            ..default()
-                        },    
-                        Trace(point.clone()),
-                    ));
-                }
-            }
-            None => {
-                println!("Error: Trace not found {:?}", point);
-            }
-        }
-    }
-    
-}
-
-fn delete_trace_event(
-    commands: &mut Commands,
-    mut state: ResMut<AppState>,
-    query_traces: Query<(Entity, &Trace)>,
-    delete_trace: &String,
-) {
-    
-    for (entity, trace) in query_traces.iter() {
-        let target_trace = delete_trace.clone();
-        if trace.0 == target_trace {
-            commands.entity(entity).despawn_recursive();
-        }
-    }
-    state.remove_point_from_trace(delete_trace.clone());
-    println!("Trace removed: {:?}", delete_trace);
-}
-
-fn delete_all_traces_event(
-    commands: &mut Commands,
-    state: &mut ResMut<AppState>,
-    query_traces: Query<(Entity, &Trace)>
-) {
-    for (entity, _) in query_traces.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-    state.traces.points.clear();   
-}
-
-#[inline]
-fn despawn_all_traces(
-    commands: &mut Commands,
-    query_traces: Query<(Entity, &Trace)>,
-) {
-    for (entity, _) in query_traces.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
+    labels
 }
 
 fn change_frame_rate(
@@ -750,118 +284,6 @@ fn change_frame_rate(
             time.set_timestep_hz(frame_rate as f64);
         }
         None => {}
-    }
-}
-
-/// Obtain the position of a marker in current frame
-pub fn get_marker_position_on_frame(
-    label: &str,
-    markers_query: &Query<(&Marker, &Transform)>,
-) -> Option<Vec3> {
-    for (marker, transform) in markers_query.iter() {
-        if marker.0 == label {
-            return Some(transform.translation);
-        } 
-    }
-    None
-}
-
-pub fn get_marker_position_on_all_frames(
-    label: &str,
-    c3d_state: &Res<C3dState>,
-    c3d_assets: &Res<Assets<C3dAsset>>,
-    query: &Query<(&Marker, &Transform)>,
-) -> Option<Vec<Vec3>> {
-    let asset = c3d_assets.get(&c3d_state.handle);
-    match asset {
-        Some(asset) => {
-            let point_data = &asset.c3d.points;
-            let num_frames = point_data.size().0;
-
-            return get_marker_position_on_frame_range(label, c3d_state, c3d_assets, query, 0, num_frames);
-        }
-        None => { return None; }
-    }
-}
-
-pub fn get_marker_position_on_frame_range(
-    label: &str,
-    c3d_state: &Res<C3dState>,
-    c3d_assets: &Res<Assets<C3dAsset>>,
-    query: &Query<(&Marker, &Transform)>,
-    start_frame: usize,
-    end_frame: usize,
-) -> Option<Vec<Vec3>>{
-    let asset = c3d_assets.get(&c3d_state.handle);
-    match asset {
-        Some(asset) => {
-            let point_data = &asset.c3d.points;
-            let num_frames = point_data.size().0;
-            let mut i = 0;
-            let mut positions = Vec::new();
-
-            query.iter().for_each(|(marker, _)| {
-                if marker.0.split("::").any(|l| {l == label}) {
-                    if (start_frame > num_frames) || (end_frame > num_frames) || (start_frame > end_frame) {  // Check if the frames are valid. Start and end are usize, so they can't be negative.
-                        println!("Error: Invalid frame range");
-                        return;
-                    }
-                    for frame in start_frame..end_frame {
-                        positions.push(Vec3::new(
-                            point_data[(frame, i)][0] as f32 / 1000.0, // frame, point_idx, x/y/z
-                            point_data[(frame, i)][1] as f32 / 1000.0,
-                            point_data[(frame, i)][2] as f32 / 1000.0,
-                        ));
-                    }
-                }
-                i += 1;
-            });
-            return Some(positions);
-        }
-        None => { return None; }
-    }
-}
-
-fn despawn_all_markers(
-    commands: &mut Commands,
-    query_markers: &Query<(Entity, &C3dMarkers)>,
-) {
-    for (entity, _) in query_markers.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-fn despawn_all_markers_event(
-    mut delete_all_markers_event: EventReader<MarkerEvent>,
-    mut commands: Commands,
-    query_c3d_markers: Query<(Entity, &C3dMarkers)>,
-) {
-    if let Some(marker_event) = delete_all_markers_event.read().last() {
-        match marker_event {
-            MarkerEvent::DespawnAllMarkersEvent => {
-                println!("Despawning all markers");
-                despawn_all_markers(&mut commands, &query_c3d_markers);
-            },
-            //_ => {},
-        }
-    }
-}
-
-fn despawn_all_joins(
-    commands: &mut Commands,
-    query_joins: &Query<(Entity, &Join)>,
-) {
-    for (entity, _) in query_joins.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-fn despawn_all_vectors(
-    commands: &mut Commands,
-    query_vectors: &Query<(Entity, &Vector)>,
-) {
-    for (entity, _) in query_vectors.iter() {
-        commands.entity(entity).despawn_recursive();
     }
 }
 

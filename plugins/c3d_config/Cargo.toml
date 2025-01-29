@@ -1,12 +1,12 @@
 [package]
 name = "config_plugin"
-version = "0.1.0"
+version = "0.2.0"
 description = "Plugin to manage c3d configuration"
 edition = "2021"
 
 [dependencies]
-bevy = "0.14.2" 
-bevy_app = "^0.14"
+bevy = "^0.15.0" 
+bevy_app = "^0.15.0"
 regex = "1.11.0"
 serde = {version = "1.0.210", features = ["derive"] }
 toml = "0.8.19"

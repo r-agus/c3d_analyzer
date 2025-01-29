@@ -1,39 +1,47 @@
 mod milestones;
+mod metrics_dashboard;
 
 use bevy::prelude::*;
 
 use bevy_egui::{egui::{self, Sense}, EguiContexts, EguiPlugin};
 
-#[cfg(not(target_arch = "wasm32"))]
-use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
+// #[cfg(not(target_arch = "wasm32"))]
+// use bevy_metrics_dashboard::{metrics::{describe_gauge, gauge}, DashboardPlugin, DashboardWindow, RegistryPlugin};
 
 use config_plugin::{ConfigC3dAsset, ConfigState};
 use control_plugin::*;
 use egui_double_slider::DoubleSlider;
 use milestones::{milestones_event_orchestrator, update_milestone_board, Milestones};
+use metrics_dashboard::*;
+use vectors::*;
+use markers::*;
+use traces::*;
 
 pub struct GUIPlugin;
 
 impl Plugin for GUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-            .add_plugins(RegistryPlugin::default())
-            .add_plugins(DashboardPlugin)
+            // .add_plugins(RegistryPlugin::default())
+            // .add_plugins(DashboardPlugin)
             .add_systems(Startup, setup)
             .add_systems(Update,
                     (gui, 
-                    DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
+                        fill_graphs, represent_graphs
+                    // DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
                     ).chain())
-            .add_systems(Update, milestones_event_orchestrator)
-            .init_resource::<Milestones>();
+            .add_systems(Update, (milestones_event_orchestrator, graph_event_orchestrator, fill_empty_graphs, MarkersWindow::draw_floating_window))
+            .init_resource::<Graphs>()
+            .init_resource::<Milestones>()
+            .add_event::<GraphEvent>();
     }
 }
 
 fn setup(
-    mut commands: Commands,
+    // mut commands: Commands,
     mut milestones: ResMut<Milestones>,
 ) {
-    commands.spawn(DashboardWindow::new("Graphs"));
+    // commands.spawn(DashboardWindow::new("Graphs"));
     milestones.default();
 }
 
@@ -44,24 +52,28 @@ fn _describe_graphs(
     println!("Describing graphs");
     println!("Markers: {:?}", marker.iter().count());
     for m in marker.iter() {
-        describe_gauge!("Test Gauge", m.0.clone());
+        // describe_gauge!("Test Gauge", m.0.clone());
         println!("Describing gauge: {}", m.0);
     }
 }
 
 fn gui(
     mut trace_event: EventWriter<TraceEvent>,
+    mut vector_event: EventWriter<VectorEvent>,
     mut egui_context: EguiContexts,
     mut app_state: ResMut<AppState>,
     mut milestones: ResMut<Milestones>,
     gui_sides: ResMut<GuiSidesEnabled>,
     config_state: Res<ConfigState>,
     config_assets: Res<Assets<ConfigC3dAsset>>,
-    markers_query: Query<(&Marker, &Transform)>,
+    // markers_query: Query<(&Marker, &Transform)>,
+    vectors_query: Query<(&Vector, &Visibility)>,
 ) {
     let timeline_enabled;
+    let graphs_enabled;
     {
         timeline_enabled = gui_sides.timeline;
+        graphs_enabled = gui_sides.graphs;
     }
     let mut slider_frame  = app_state.frame;
     let mut milestone_frame = app_state.frame;
@@ -195,9 +207,6 @@ fn gui(
                     });
 
                     ui.horizontal(|ui| {
-                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
-                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
-                        }
                         ui.menu_button("Select configuration", |ui|{
                             ui.label("Select configuration");
                             let config_state = config_assets.get(&config_state.handle);
@@ -209,20 +218,45 @@ fn gui(
                                     }
                                 }
                             }
-                        })
+                        });
+                        if ui.button("Remove all traces").on_hover_text("Remove all traces").clicked() {
+                            trace_event.send(TraceEvent::DespawnAllTracesEvent);
+                        }
+                        ui.menu_button("Vectors", |ui| {
+                            if ui.button("Hide all").clicked() {
+                                vector_event.send(VectorEvent::HideAllVectorsEvent);
+                            } 
+                            if ui.button("Show all").clicked() {
+                                vector_event.send(VectorEvent::ShowAllVectorsEvent);
+                            }
+                            
+                            let mut vectors = vectors_query // for some reason query duplicates the vectors, so filter them out
+                                .iter()
+                                .collect::<Vec<_>>();
+                            vectors.dedup();
+                            for (vector, visibility) in vectors {
+                                if ui.button(vector.0.0.clone()).clicked() {
+                                    if visibility == Visibility::Visible {
+                                        vector_event.send(VectorEvent::HideVectorEvent(vector.clone()));
+                                    } else {
+                                        vector_event.send(VectorEvent::ShowVectorEvent(vector.clone()));
+                                    }
+                                }
+                            }
+                        });
                     });
                 });
                 // });
             });
         });
 
-        #[cfg(not(target_arch = "wasm32"))]
-        for (m,t) in markers_query.iter() {
-            let pos = t.translation;
-            gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
-            gauge!(m.0.clone() + "::y").set(pos[1]);
-            gauge!(m.0.clone() + "::z").set(pos[2]);
-        }
+        // #[cfg(not(target_arch = "wasm32"))]
+        // for (m,t) in markers_query.iter() {
+        //     let pos = t.translation;
+        //     gauge!(m.0.clone() + "::x").set(pos[0]);  // TODO: group by config
+        //     gauge!(m.0.clone() + "::y").set(pos[1]);
+        //     gauge!(m.0.clone() + "::z").set(pos[2]);
+        // }
 
         if app_state.frame != slider_frame {
             if slider_frame > 0 {
@@ -239,5 +273,8 @@ fn gui(
             }
             app_state.render_frame = true;
         }
+    }
+    if graphs_enabled {
+        
     }
 }

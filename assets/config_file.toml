@@ -1,11 +1,10 @@
 [point_groups]
     head = ["LFHD", "RFHD", "RBHD", "LBHD", "LFHD"]
     shoulders = ["LSHO", "RSHO"]
-    rshoulders1 = ["RSHO1", "RSHO2", "RSHO3"]
-    lshoulders1 = ["LSHO1", "LSHO2", "LSHO3"]
-    larm = ["LUPA1", "LUPA2", "LFRA", "LWRB"]
-    rarm = ["RUPA1", "RUPA2", "RUPA3", "RFRA", "RWRB"]
-
+    luarm = ["LUPA2", "LUPA3", "LUPA1"]
+    larm = ["LFRA", "LWRB", ]
+    ruarm = ["RUPA2", "RUPA3", "RUPA1"]
+    rarm = ["RFRA", "RWRB"]
     lhand = ["LWRB", "LFIN"]
     rhand = ["RWRB", "RFIN"]
     hands = ["(L|R)WRB", ".FIN"]   # Utilizamos expresiones regulares para encontrar patrones
@@ -17,13 +16,26 @@
     rleg = ["RTHI", "RKNE", "RTIB", "RANK", "RHEE", "RTOE"]
     ball = ["BALL"]
 
+    errores = ["LWRB", "Rfemur.*"]
+
 [head.config]
     point_color = [255, 0, 0]
     point_size = 0.5 # Mitad del tamaño original
+    join_color = [255, 128, 0]
 
 [shoulders.config]
     point_color = [100, 100, 255]
     point_size = 2.0 # Doble del tamaño original
+
+[larm.config]
+    point_color = [255, 100, 100]
+    point_size = 1.0
+    join_color = [255, 100, 100]
+
+[rarm.config]
+    point_color = [255, 100, 100]
+    point_size = 1.0
+    join_color = [255, 100, 100]
 
 [objects.config]
     point_color = [100, 100, 100]
@@ -37,28 +49,37 @@
 [config1]
     visible_points = [
         ["head"], 
-        ["larm"], ["rarm"], ["shoulders"], #"C7",
+        ["luarm"], ["larm"], ["ruarm"], ["rarm"], ["hands"], #"C7",
         ["lleg"], ["rleg"],
+        ["shoulders"],
         ["objects_re"], "BALL",
         "LWRB"
     ]
 
     joins = [
         [["head"]],     # Unir todos los puntos de la cabeza
-        ["LUPA1", "LUPA2", "LFRA", "LWRB"], # Error con LWRB
+        [["luarm"]],
+        [["larm"]],
+        [["ruarm"]],
         [["rarm"]],
+        [["lhand"]],
+        [["rhand"]],
+        ["LUPA1", "LFRA"],
+        ["RUPA1", "RFRA"],
+        [["shoulders"]],
         ["CLAV", "C7", "T10", "STRN", "CLAV"],
         ["ThoraxS", "ThoraxI", "AbdI"],
         ["RSHO", "LSHO"],
         ["LASI", "RASI", "RPSI", "LPSI", "LASI"],
         [["lleg"]],
         [["rleg"]],
-        [["objects"]]
+        [["objects"]],
     ]
 
     vectors = [
         ["OBJ1", "LVelOBJ1"],
         ["OBJ2", "LVelOBJ2"],
+        ["ThoraxC", "WThorax"],
     ]
 
 
@@ -77,3 +98,57 @@
     join_color = [255, 195, 0]
     line_thickness = 2.0
     point_size = 1.5
+
+[arms_with_cones] # Personalizar los brazos con conos
+    visible_points = [
+        ["head"], 
+        ["luarm"], ["larm"], ["ruarm"], ["rarm"], ["lhand"], ["rhand"], ["shoulders"],  # Vamos a personalizar estos puntos
+        ["lleg"], ["rleg"], "OBJ[1-Z]", "BALL"     
+        ]
+
+    joins = [
+        [["head"]],
+        { points = [["luarm"]], shape = { type = "semicono", radius1 = 1.8, radius2 = 1 }},
+        { points = [["ruarm"]], shape = { type = "semicone", radius1 = 1.8, radius2 = 1 }},    # Entiende tanto ingles como español
+        { points = [["larm"]], shape = { type = "partial cone", radius1 = 2.3, radius2 = 1.5}}, 
+        { points = [["rarm"]], shape = { type = "cono parcial", radius1 = 2.3, radius2 = 1.5}},   # Varias formas de decir lo mismo
+        { points = [["lhand"]], shape = { type = "cone frustum", radius1 = 2.5, radius2 = 1}}, 
+        { points = [["rhand"]], shape = { type = "CONO Truncado", radius1 = 2.5, radius2 = 1}}, # Las mayusculas no importan 
+        { points = [["shoulders"]], shape = { type = "cilindro", radius = 2 }},                 # Cada forma tiene sus propios parametros
+        { points = ["LUPA1", "LFRA"], shape = { type = "cone frustum", radius1 = 3.5, radius2 = 1.3}},
+        { points = ["RUPA1", "RFRA"], shape = { type = "cone frustum", radius1 = 3.5, radius2 = 1.3}},        
+        [["lleg"]],
+        [["rleg"]],
+        ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"],
+    ]
+
+    join_color = [0, 195, 250]
+    line_thickness = 0.5
+    point_size = 0.8
+
+[arms_with_rectangular_prism]
+    visible_points = [
+        ["head"], 
+        ["luarm"], ["larm"], ["ruarm"], ["rarm"], ["lhand"], ["rhand"], ["shoulders"],
+        ["lleg"], ["rleg"], "OBJ[1-Z]", "BALL"  
+        ]
+
+    joins = [
+        [["head"]],
+        { points = [["luarm"]], shape = { type = "prisma rectangular", width = 1.8, height = 1.5 }},
+        { points = [["ruarm"]], shape = { type = "rectangular prism",  width = 1.8, height = 1.5 }},
+        { points = [["larm"]], shape = { type = "prisma", width = 2.3, height = 1.5}}, 
+        { points = [["rarm"]], shape = { type = "prism",  width = 2.3, height = 1.5}},
+        { points = [["lhand"]], shape = { type = "paralelepipedo", width = 2.5, height = 1.9}}, 
+        { points = [["rhand"]], shape = { type = "paralelepípedo", width = 2.5, height = 1.9}},
+        { points = [["shoulders"]], shape = { type = "parallelepiped", width = 2, height = 1.7 }},
+        { points = ["LUPA1", "LFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},
+        { points = ["RUPA1", "RFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},        
+        [["lleg"]],
+        [["rleg"]],
+        ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"],
+    ]
+
+    join_color = [250, 0, 250]
+    line_thickness = 0.5
+    point_size = 0.8

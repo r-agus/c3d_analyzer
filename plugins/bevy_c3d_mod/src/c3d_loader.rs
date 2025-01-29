@@ -1,9 +1,8 @@
 use bevy_asset::{
-    io::Reader, Asset, AssetLoader, Assets, AsyncReadExt, Handle, LoadContext,
+    io::Reader, Asset, AssetLoader, Assets, Handle, LoadContext,
 };
 use bevy_ecs::prelude::{Event, EventWriter, ResMut, Resource};
 use bevy_reflect::TypePath;
-use bevy_utils::BoxedFuture;
 use c3dio::{C3d, C3dParseError};
 
 /// Loader for C3D files
@@ -17,20 +16,18 @@ impl AssetLoader for C3dLoader {
 
     /// The most convenient way to load C3D files is to read the entire file into memory
     /// and then parse it.
-    fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader,
+    async fn load<'a>(
+        &self,
+        reader: &mut dyn Reader,
         _settings: &'a Self::Settings,
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<C3dAsset, C3dParseError>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            let res = reader.read_to_end(&mut bytes).await;
-            if let Err(err) = res {
-                return Err(C3dParseError::ReadError(err));
-            }
-            load_c3d(bytes.as_slice(), load_context).await
-        })
+        load_context: &mut LoadContext<'_>,
+    ) -> Result<C3dAsset, C3dParseError> {
+        let mut bytes = Vec::new();
+        let res = reader.read_to_end(&mut bytes).await;
+        if let Err(err) = res {
+            return Err(C3dParseError::ReadError(err));
+        }
+        load_c3d(bytes.as_slice(), load_context).await
     }
 
     /// C3D files have the extension "c3d"

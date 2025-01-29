@@ -1,10 +1,10 @@
-mod c3d_config;
+mod c3d_config_toml;
 
-use bevy::{asset::{io::Reader, Asset, AssetApp, AssetLoader, AssetServer, Assets, AsyncReadExt, Handle, LoadContext}, prelude::{Commands, Local, Res, Resource}, reflect::TypePath};
+use bevy::{asset::{io::Reader, Asset, AssetApp, AssetLoader, AssetServer, Assets, Handle, LoadContext}, prelude::{Commands, Local, Res, Resource}, reflect::TypePath};
 use bevy_app::{App, Plugin, Update};
 
 pub mod prelude {
-    pub use crate::c3d_config::*;
+    pub use crate::c3d_config_toml::*;
 }
 
 pub use prelude::*;
@@ -50,21 +50,19 @@ impl AssetLoader for ConfigAssetLoader {
     type Settings = ();
     type Error = std::io::Error;
 
-    fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader,
-        _settings: &'a Self::Settings,
-        _load_context: &'a mut LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            let _res = reader.read_to_end(&mut bytes).await;
-            let content = String::from_utf8_lossy(&bytes).to_string();
-            let config_file = parse_config(&content, false).unwrap();
-            Ok(ConfigC3dAsset { 
-                config_str: content, 
-                config: config_file,
-            })
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _settings: &Self::Settings,
+        _load_context: &mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        let _res = reader.read_to_end(&mut bytes).await;
+        let content = String::from_utf8_lossy(&bytes).to_string();
+        let config_file = parse_config(&content, false).unwrap();
+        Ok(ConfigC3dAsset { 
+            config_str: content, 
+            config: config_file,
         })
     }
 
