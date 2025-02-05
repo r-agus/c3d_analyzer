@@ -91,7 +91,7 @@ fn rectangular_prism_config(
 
 fn standard_material_with_color(materials: &mut ResMut<'_, Assets<StandardMaterial>>, line_color: Vec<u8>) -> Handle<StandardMaterial> {
     let join_material = materials.add(StandardMaterial {
-        base_color: 
+        base_color: // TODO: Add transparency (not working) 
             if line_color.len() == 3 {
                 Color::srgb_u8(line_color[0], line_color[1],line_color[2])
             } else if line_color.len() == 4 {
