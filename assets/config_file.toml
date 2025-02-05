@@ -3,6 +3,8 @@
     shoulders = ["LSHO", "RSHO"]
     luarm = ["LUPA2", "LUPA3", "LUPA1"]
     larm = ["LFRA", "LWRB", ]
+    rarm2 = ["RSJC", "RELJ", "RWJC", "RFINJC"]
+    larm2 = ["LSJC", "LELJ", "LWJC", "LFINJC"]
     ruarm = ["RUPA2", "RUPA3", "RUPA1"]
     rarm = ["RFRA", "RWRB"]
     lhand = ["LWRB", "LFIN"]
@@ -82,6 +84,30 @@
         ["ThoraxC", "WThorax"],
     ]
 
+[config2]
+    visible_points = [
+        ["head"], 
+        ["rarm2"], ["larm2"],
+        ["objects_re"], "BALL",
+        "CLAV", "C7", "T10", "STRN", "CLAV",
+        ["lleg"], ["rleg"]
+    ]
+
+    joins = [
+        [["head"]],
+        ["CLAV", "C7", "T10", "STRN", "CLAV"],
+        { points = [["larm2"]], shape = { type = "semicono", radius1 = 2.8, radius2 = 2 }},
+        { points = [["rarm2"]], shape = { type = "semicono", radius1 = 2.8, radius2 = 2 }},
+        { points = [["shoulders"]], shape = { type = "cilindro", radius = 2 }},
+        [["lleg"]],
+        [["rleg"]],
+        [["objects"]],
+    ]
+
+    join_color = [0, 195, 250]
+    line_thickness = 0.5
+    point_size = 0.8
+
 
 [solo_objetos]
     visible_points = [["objects"], "BALL"]
@@ -142,8 +168,8 @@
         { points = [["lhand"]], shape = { type = "paralelepipedo", width = 2.5, height = 1.9}}, 
         { points = [["rhand"]], shape = { type = "paralelepípedo", width = 2.5, height = 1.9}},
         { points = [["shoulders"]], shape = { type = "parallelepiped", width = 2, height = 1.7 }},
-        { points = ["LUPA1", "LFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},
-        { points = ["RUPA1", "RFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},        
+        { points = ["LUPA1", "LFRA"], shape = { type = "prism", width = 3.5, height = 3.3, vectors = ["LVelObj1"], vectors_visibility = [true]}},
+        { points = ["RUPA1", "RFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},
         [["lleg"]],
         [["rleg"]],
         ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"],

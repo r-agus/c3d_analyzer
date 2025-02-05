@@ -13,3 +13,4 @@ egui_double_slider = "0.3.1"
 bevy_c3d_mod = {path = "../bevy_c3d_mod"}
 control_plugin = { path = "../app_control" }
 config_plugin = { path = "../c3d_config" }
+egui_dock = "0.14"  # version 0.15 is not working

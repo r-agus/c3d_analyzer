@@ -84,7 +84,7 @@ impl Milestones {
 }
 
 // Update board
-pub(crate) fn update_milestone_board(milestones: &mut Milestones, width: f32, num_frames: usize, ui: &mut Ui) {
+pub(crate) fn update_milestone_board(milestones: &&mut Milestones, width: f32, num_frames: usize, ui: &mut Ui) {
     let points: Vec<_> = milestones
         .milestones
         .keys()

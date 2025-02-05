@@ -271,52 +271,47 @@ pub(crate) fn fill_graphs(
 }
 
 pub(crate) fn represent_graphs(
-    mut graphs: ResMut<Graphs>,
-    mut ctx: EguiContexts,
-    mut event_writer: EventWriter<GraphEvent>,
+    graphs: &mut Graphs,
+    ui: &mut egui::Ui,
+    event_writer: &mut EventWriter<GraphEvent>,
 ){
-    let ctx  = ctx.ctx_mut();
     let mut removed_graphs = Vec::new();
 
-    egui::SidePanel::right("Graphs")
-        .show(ctx, |ui| {
-            if ui.button("Add graph").clicked() {
-                event_writer.send(GraphEvent::CreateMarkersWindow);
-            }
-            ui.separator();
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                let mut keys = graphs.graphs.keys().cloned().collect::<Vec<String>>();
-                keys.sort();
-                for (_i, marker) in keys.iter().enumerate() {
-                    ui.collapsing(marker, |ui|{
-                        if ui.button("Remove").clicked() {
-                            removed_graphs.push(marker.clone());
-                        }
-                        let new_plot = || {
-                            Plot::new(marker)
-                                .allow_scroll(false)
-                                .view_aspect(2.0)
-                                .auto_bounds([true, true].into())
-                        };
-                        let binding = Graph::new(vec![]);
-                        let graph = graphs.graphs.get(marker).unwrap_or(&binding);
-                        let principal_line = Line::new(graph.get_primary_plot())
-                            .color(egui::Color32::from_rgb(255, 0, 0));
-                        let secondary_line = Line::new(graph.get_secondary_plot())
-                            .color(egui::Color32::from_rgb(0, 255, 0));
-                        let plot = match graph.scale {
-                            Scale::Time => new_plot().x_axis_label("Time"),
-                            Scale::Frames => new_plot().x_axis_label("Frames"),
-                        };
-                        plot.show(ui, |ui| {
-                            ui.line(principal_line);
-                            ui.line(secondary_line);
-                        });
-                    });
+    if ui.button("Add graph").clicked() {
+        event_writer.send(GraphEvent::CreateMarkersWindow);
+    }
+    ui.separator();
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        let mut keys = graphs.graphs.keys().cloned().collect::<Vec<String>>();
+        keys.sort();
+        for (_i, marker) in keys.iter().enumerate() {
+            ui.collapsing(marker, |ui|{
+                if ui.button("Remove").clicked() {
+                    removed_graphs.push(marker.clone());
                 }
+                let new_plot = || {
+                    Plot::new(marker)
+                        .allow_scroll(false)
+                        .view_aspect(2.0)
+                        .auto_bounds([true, true].into())
+                };
+                let binding = Graph::new(vec![]);
+                let graph = graphs.graphs.get(marker).unwrap_or(&binding);
+                let principal_line = Line::new(graph.get_primary_plot())
+                    .color(egui::Color32::from_rgb(255, 0, 0));
+                let secondary_line = Line::new(graph.get_secondary_plot())
+                    .color(egui::Color32::from_rgb(0, 255, 0));
+                let plot = match graph.scale {
+                    Scale::Time => new_plot().x_axis_label("Time"),
+                    Scale::Frames => new_plot().x_axis_label("Frames"),
+                };
+                plot.show(ui, |ui| {
+                    ui.line(principal_line);
+                    ui.line(secondary_line);
+                });
             });
-        });
-    
+        }
+    });    
     for marker in removed_graphs {
         graphs.remove_graph(&marker);
     }
