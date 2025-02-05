@@ -134,6 +134,11 @@
         ["ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5", "ClubFace3"]                                   # Palo
     ]
 
+    vectors = [
+        ["RUarmCM", ["RUarmIv", "RUarmJv"], 2.5],
+        ["RUarmCM", "RUarmKv", 4.5],
+    ]
+
     join_color = [0, 195, 250]
     line_thickness = 0.75
     point_size = 0.8
