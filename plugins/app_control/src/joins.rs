@@ -99,6 +99,7 @@ fn standard_material_with_color(materials: &mut ResMut<'_, Assets<StandardMateri
             } else{
                 Color::srgb_u8(0, 127, 0)
             },
+        alpha_mode: AlphaMode::Blend,
         ..default()
     });
     join_material
@@ -126,8 +127,12 @@ pub fn represent_joins(
                     (Some(marker1), Some(marker2), Some(direction)) => {
                         let position = (marker1 + marker2) / 2.0;
                         let length = (marker1 - marker2).length();
-                        let direction = get_marker_position_on_frame(&direction.get(&join.0).unwrap_or(&("".to_string(), false)).0, &markers_query);
-                        let rotation = Quat::from_rotation_arc(Vec3::Y, direction.unwrap_or(Vec3::Y));
+
+                        let rotation = Quat::from_mat3(&Mat3::from_cols(
+                            get_marker_position_on_frame(&direction[1], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO),
+                            get_marker_position_on_frame(&direction[2], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO),
+                            get_marker_position_on_frame(&direction[0], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO) 
+                        ));
                         let scale = Vec3::new(0.5, length, 0.5);
                         transform.translation = position;
                         transform.rotation = rotation;
