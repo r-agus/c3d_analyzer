@@ -18,6 +18,21 @@
 
     errores = ["LWRB", "Rfemur.*"]
 
+    demo_arms = ["RSJC", "RELJ"]
+    demo_forearms = ["RELJ", "RWJC"]
+
+    centro_masa = ["RUarmCM", "LUarmCM", "RFarmCM", "LFarmCM"]
+
+[demo_arms.config]
+    join_color = [190, 215, 20, 150]
+
+[demo_forearms.config]
+    join_color = [190, 215, 20, 150]
+
+[centro_masa.config]
+    point_color = [255, 255, 0]
+    point_size = 2.0
+
 [head.config]
     point_color = [255, 0, 0]
     point_size = 0.5 # Mitad del tamaño original
@@ -120,7 +135,8 @@
 
     joins = [
         [["head"]],
-        { points = ["RSJC", "RELJ", "RWJC"], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Brazo derecho
+        { points = [["demo_arms"]], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Brazo derecho
+        { points = ["RELJ", "RWJC"], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Antebrazo derecho
         { points = ["LSJC", "LELJ", "LWJC"], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Brazo izquierdo
         { points = ["RWJC", "RFINJC"], shape = { type = "semicono", radius1 = 2.5, radius2 = 1.0 } },       # Antebrazo derecho
         { points = ["LWJC", "LFINJC"], shape = { type = "semicono", radius1 = 2.5, radius2 = 1.0 } },       # Antebrazo izquierdo
@@ -136,7 +152,7 @@
 
     vectors = [
         ["RUarmCM", ["RUarmIv", "RUarmJv"], 2.5],
-        ["RUarmCM", "RUarmKv", 4.5],
+        ["RUarmCM", "RUarmKv", 2.5],
     ]
 
     join_color = [0, 195, 250]
@@ -164,9 +180,10 @@
 
     joins = [
         [["head"]],
-        { points = ["RSJC", "RELJ", "RWJC"], shape = { type = "prism", width = 4.0, height = 2.0 } }, # Brazo derecho
+        { points = ["RSJC", "RELJ"], shape = { type = "prism", width = 4.0, height = 2.0, vector = "RUarmCM" } }, # Brazo derecho
+        { points = ["RELJ", "RWJC"], shape = { type = "prism", width = 4.0, height = 2.0, vector = "RFarmCM" } }, # Brazo derecho vector = "RFarmCM"
         { points = ["LSJC", "LELJ", "LWJC"], shape = { type = "prism", width = 4.0, height = 2.0 } }, # Brazo izquierdo
-        { points = ["RWJC", "RFINJC"], shape = { type = "prism", width = 2.5, height = 1.0 } },       # Antebrazo derecho
+        { points = ["RWJC", "RFINJC"], shape = { type = "prism", width = 2.5, height = 1.0 } },       # Antebrazo derecho 
         { points = ["LWJC", "LFINJC"], shape = { type = "prism", width = 2.5, height = 1.0 } },       # Antebrazo izquierdo
         ["C7", "CLAV", "STRN", "T10", "C7"],                                                                # Tronco
         ["RASI", "LASI", "LPSI", "RPSI", "RASI"],                                                           # Pelvis
@@ -178,6 +195,13 @@
         ["ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5", "ClubFace3"]                                   # Palo
     ]
 
-    join_color = [250, 0, 250]
+    vectors = [
+        ["RUarmCM", ["RUarmIv", "RUarmJv", "RUarmKv"], 2.5],
+        ["RFarmCM", ["RFarmIv", "RFarmJv", "RFarmKv"], 1.5],
+        ["LUarmCM", ["LUarmIv", "LUarmJv", "LUarmKv"], 2.5],
+        ["LFarmCM", ["LFarmIv", "LFarmJv", "LFarmKv"], 1.5],        
+    ]
+
+    join_color = [250, 0, 250, 190]
     line_thickness = 0.5
     point_size = 0.8
