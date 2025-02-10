@@ -51,8 +51,8 @@ pub(crate) fn spawn_vectors_in_config(
                 for (vector, scale) in vectors {
                     let default_cylinder_height = 1.0;
                     let mut cone_mesh = Mesh::from(Cone {
-                        radius: 0.05, 
-                        height: if num_vectors == 3 {0.5} else {0.2}, // Adapt possitional vectors
+                        radius: if num_vectors == 3 {0.025} else {0.05}, // Adapt possitional vectors
+                        height: if num_vectors == 3 {0.5} else {0.2},
                     });
                     let mut cylinder_mesh = Mesh::from(Cylinder::new(
                         0.01,
