@@ -11,6 +11,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
+use mouse_keyboard::*;
 use vectors::*;
 use markers::*;
 use joins::*;
@@ -29,7 +30,8 @@ impl Plugin for ControlPlugin {
                 )))
             .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
-            .add_systems(Startup, setup)
+            .add_systems(Startup, setup_cameras)
+            .add_systems(Startup, init_resources)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
             .add_systems(First, file_drop::update_configc3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_config } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
@@ -43,6 +45,7 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, (represent_joins, represent_vectors))
             .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, vector_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
+            .add_systems(Update, update_orbit_camera)
             .add_event::<MarkerEvent>()
             .add_event::<JoinEvent>()
             .add_event::<TraceEvent>()
@@ -146,7 +149,7 @@ impl AppState {
     }
 }
 
-fn setup(
+fn init_resources(
     mut state: ResMut<AppState>,
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
@@ -164,6 +167,24 @@ fn setup(
     gui.graphs = true;
 
     println!("Control PluginSetup done");
+}
+
+fn setup_cameras(
+    mut commands: Commands,
+) {
+    commands.spawn((
+        Camera3d { ..default() },
+        Camera {
+            clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
+            ..default()
+        },
+        CustomOrbitCamera {
+            center: Vec3::ZERO,
+            distance: 5.0,
+            yaw: 0.0,
+            pitch: std::f32::consts::FRAC_PI_2,
+        }
+    ));
 }
 
 fn load_c3d(

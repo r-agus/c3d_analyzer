@@ -1,4 +1,15 @@
+use bevy::input::mouse::MouseMotion;
+
 use crate::*;
+
+#[derive(Component)]
+pub(crate) struct CustomOrbitCamera {
+    pub center: Vec3,
+    pub distance: f32,
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
 
 pub fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -103,6 +114,40 @@ pub fn keyboard_controls (
             _ => {}
         }
     }    
+}
+
+pub(crate) fn update_orbit_camera(
+    mut cameras: Query<(&mut Transform, &mut CustomOrbitCamera)>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut motion_evr: EventReader<MouseMotion>,
+) {
+    let (mut transform, mut orbit) = cameras.single_mut();
+
+    let mut delta_yaw = 0.0;
+    let mut delta_pitch = 0.0;
+
+    if mouse.pressed(MouseButton::Left) {
+        for ev in motion_evr.read() {
+            delta_yaw -= ev.delta.x * 0.005;
+            delta_pitch -= ev.delta.y * 0.005;
+        }
+    }
+
+    orbit.yaw += delta_yaw;
+    orbit.pitch = (orbit.pitch + delta_pitch).clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
+
+    let base_rotation = Quat::from_xyzw(std::f32::consts::SQRT_2 / 2.0, 0.0, 0.0, std::f32::consts::SQRT_2 / 2.0).normalize();
+    let corrected_up = base_rotation * Vec3::Y;
+
+    let yaw_rotation = Quat::from_axis_angle(corrected_up, orbit.yaw);
+    let pitch_rotation = Quat::from_axis_angle(Vec3::X, orbit.pitch);
+
+    let final_rotation = yaw_rotation * base_rotation * pitch_rotation;
+
+    let offset = final_rotation * Vec3::new(0.0, 0.0, orbit.distance);
+    transform.translation = orbit.center + offset;
+    transform.rotation = final_rotation;
+    println!("Transform: {:?}", transform);
 }
 
 fn get_config_index(c3d_asset: &ConfigC3dAsset, idx: usize) -> Option<String> {
