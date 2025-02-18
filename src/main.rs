@@ -19,6 +19,7 @@ fn setup(
     mut commands: Commands,
 ) {
     // Spawn a light and the camera
+    // TODO: Spawn floor
     commands.spawn((
         PointLight { ..default() },
         Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
