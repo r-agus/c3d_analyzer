@@ -15,9 +15,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-) {
+fn setup(mut commands: Commands) {
     // Spawn a light and the camera
     // TODO: Spawn floor
     commands.spawn((
