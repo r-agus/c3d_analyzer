@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
-use bevy_web_file_drop::WebFileDropPlugin;
+// use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
 use mouse_keyboard::*;
 use vectors::*;
@@ -22,12 +22,12 @@ pub struct ControlPlugin;
 impl Plugin for ControlPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins((WebFileDropPlugin, DefaultPlugins.set(
+            .add_plugins(DefaultPlugins.set(  // WebFileDropPlugin,
                 AssetPlugin {
                             meta_check: AssetMetaCheck::Never,
                             ..default()
                         }
-                )))
+                ))
             .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup_cameras)
@@ -179,10 +179,10 @@ fn setup_cameras(
             ..default()
         },
         CustomOrbitCamera {
-            center: Vec3::ZERO,
+            center: Vec3::new(0.0, -0.1, 0.0),
             distance: 5.0,
             yaw: 0.0,
-            pitch: std::f32::consts::FRAC_PI_2,
+            pitch: 0.0,
         }
     ));
 }
