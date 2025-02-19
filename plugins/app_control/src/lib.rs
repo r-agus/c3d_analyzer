@@ -183,9 +183,9 @@ fn setup_environment(
         },
         CustomOrbitCamera {
             center: Vec3::new(0.0, -0.1, 0.0),
-            distance: 5.0,
+            distance: 7.0,
             yaw: 0.0,
-            pitch: 0.0,
+            pitch: -0.5,
         }
     ));
 
