@@ -129,9 +129,9 @@ pub fn represent_joins(
                         let length = (marker1 - marker2).length();
 
                         let rotation = Quat::from_mat3(&Mat3::from_cols(
-                            get_marker_position_on_frame(&direction[1], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO),
-                            get_marker_position_on_frame(&direction[2], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO),
-                            get_marker_position_on_frame(&direction[0], &markers_query).unwrap().normalize(),//.unwrap_or(Vec3::ZERO) 
+                            get_marker_position_on_frame(&direction[1], &markers_query).unwrap_or(Vec3::ZERO).normalize(),
+                            get_marker_position_on_frame(&direction[2], &markers_query).unwrap_or(Vec3::ZERO).normalize(),
+                            get_marker_position_on_frame(&direction[0], &markers_query).unwrap_or(Vec3::ZERO).normalize(),
                         ));
                         let scale = Vec3::new(0.5, length, 0.5);
                         transform.translation = position;
