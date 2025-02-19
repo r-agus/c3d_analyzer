@@ -11,36 +11,7 @@ fn main() {
     App::new()
         .add_plugins(ControlPlugin)
         .add_plugins(GUIPlugin) // TODO: move this to the control_plugin
-        .add_systems(Startup, setup)
         .run();
-}
-
-fn setup(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
-    // Base
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(Vec3::Z, [5.0, 5.0].into()))),
-        MeshMaterial3d(materials.add(Color::srgb(0.2, 0.3, 0.2))),
-        Transform::from_rotation(Quat::from_rotation_x(0.0)),
-    ));
-
-    commands.spawn((
-        PointLight { ..default() },
-        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
-    ));
-
-    commands.spawn((
-        PointLight { ..default() },
-        Transform::from_translation(Vec3::new(0.0, 0.0, -3.0)),
-    ));
-
-    commands.insert_resource(AmbientLight {
-        brightness: 0.3,
-        ..default()
-    });
 }
 
 #[wasm_bindgen]

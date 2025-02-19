@@ -174,6 +174,32 @@ fn setup_environment(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
+    // Base
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Z, [5.0, 5.0].into()))),
+        MeshMaterial3d(materials.add(Color::srgb(0.2, 0.3, 0.2))),
+        Transform::from_rotation(Quat::from_rotation_x(0.0)),
+    ));
+
+    commands.spawn((
+        PointLight { ..default() },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
+    ));
+
+    commands.spawn((
+        PointLight {
+            intensity: 10.0,
+            shadows_enabled: false,
+            ..default()
+        },
+        Transform::from_translation(Vec3::new(0.0, 0.0, -3.0)),
+    ));
+
+    commands.insert_resource(AmbientLight {
+        brightness: 0.3,
+        ..default()
+    });
+
     // Set camera
     commands.spawn((
         Camera3d { ..default() },
@@ -247,7 +273,6 @@ fn spawn_reference_vectors(
             })),
             Transform::from_translation(position).with_rotation(rotation),
         ));
-        println!("Vector spawned with color: {:?} and rotation {:?}", color, rotation);
         true
     });
 }
