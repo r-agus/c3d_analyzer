@@ -175,7 +175,7 @@ fn setup_cameras(
     commands.spawn((
         Camera3d { ..default() },
         Camera {
-            clear_color: Color::srgb(0.8, 0.8, 0.8).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
+            clear_color: Color::srgb(0.2, 0.2, 0.2).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
             ..default()
         },
         CustomOrbitCamera {
