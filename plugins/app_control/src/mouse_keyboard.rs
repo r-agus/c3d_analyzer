@@ -133,7 +133,6 @@ pub(crate) fn update_orbit_camera(
     let mut delta_pitch = 0.0;
     let mut delta_pan = Vec2::ZERO;
 
-
     for ev in motion_evr.read() {
         if mouse.pressed(MouseButton::Left) {
             delta_yaw -= ev.delta.x * 0.005;
@@ -149,7 +148,7 @@ pub(crate) fn update_orbit_camera(
     }
 
     orbit.yaw += delta_yaw;
-    orbit.pitch = (orbit.pitch + delta_pitch).clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
+    orbit.pitch = (orbit.pitch + delta_pitch).clamp(-std::f32::consts::FRAC_PI_2, 0.0);
 
     let base_rotation = Quat::from_xyzw(std::f32::consts::SQRT_2 / 2.0, 0.0, 0.0, std::f32::consts::SQRT_2 / 2.0).normalize();
 
