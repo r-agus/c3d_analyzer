@@ -186,15 +186,6 @@ fn setup_environment(
         Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
     ));
 
-    commands.spawn((
-        PointLight {
-            intensity: 10.0,
-            shadows_enabled: false,
-            ..default()
-        },
-        Transform::from_translation(Vec3::new(0.0, 0.0, -3.0)),
-    ));
-
     commands.insert_resource(AmbientLight {
         brightness: 0.3,
         ..default()
@@ -204,7 +195,7 @@ fn setup_environment(
     commands.spawn((
         Camera3d { ..default() },
         Camera {
-            clear_color: Color::srgb(0.2, 0.2, 0.2).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
+            clear_color: Color::srgb(0.5, 0.5, 0.5).into(), // 0.22, 0.22, 0.22 is cool (but change points to green)
             ..default()
         },
         CustomOrbitCamera {
