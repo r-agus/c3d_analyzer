@@ -287,6 +287,18 @@ pub(crate) fn represent_graphs(
                 commands.spawn(MarkersWindow::new());
             }
             ui.separator();
+            ui.collapsing("Settings", |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Scale:");
+                    if ui.button("Time").clicked() {
+                        graphs.set_time_scale();
+                    }
+                    if ui.button("Frames").clicked() {
+                        graphs.set_frame_scale();
+                    }
+                });
+            });
+            ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let mut keys = graphs.graphs.keys().cloned().collect::<Vec<String>>();
                 keys.sort();
@@ -295,6 +307,7 @@ pub(crate) fn represent_graphs(
                         if ui.button("Remove").clicked() {
                             removed_graphs.push(marker.clone());
                         }
+                        
                         let new_plot = || {
                             Plot::new(marker)
                                 .allow_scroll(false)
