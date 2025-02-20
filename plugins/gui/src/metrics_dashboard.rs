@@ -304,10 +304,15 @@ pub(crate) fn represent_graphs(
                 keys.sort();
                 for (_i, marker) in keys.iter().enumerate() {
                     ui.collapsing(marker, |ui|{
-                        if ui.button("Remove").clicked() {
-                            removed_graphs.push(marker.clone());
-                        }
-                        
+                        ui.horizontal(|ui| {
+                            let current_y = graphs.graphs.get(marker).unwrap().secondary_plot.last().unwrap_or(&0.0);
+                            
+                            if ui.button("Remove").clicked() {
+                                removed_graphs.push(marker.clone());
+                            }
+                            ui.add_space(ui.available_width() / 2.0);
+                            ui.label(format!("Current Y: {:.2}", current_y));
+                        });
                         let new_plot = || {
                             Plot::new(marker)
                                 .allow_scroll(false)
