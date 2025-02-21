@@ -720,7 +720,7 @@ dependencies = [
 [[package]]
 name = "bevy_blob_loader"
 version = "0.0.0"
-source = "git+https://github.com/r-agus/bevy_blob_loader?branch=Update_to_bevy_15#f8a383311bcd6a462d224d0af1970da419ad25b8"
+source = "git+https://github.com/r-agus/bevy_blob_loader?branch=Update_to_bevy_15#57c27e888c4dab65c2c5ca246cd573026f40e71b"
 dependencies = [
  "base64 0.22.1",
  "bevy",
