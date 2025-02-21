@@ -7,12 +7,12 @@ use egui_plot::{AxisHints, Line, Plot};
 pub(crate) struct Graphs{
     graphs: HashMap<String, Graph>,
     empty_graphs: HashMap<String, XYZ>,
+    scale: Scale,
 } 
 
 struct Graph {
     primary_plot: Vec<f64>,
     secondary_plot: Vec<f64>, 
-    scale: Scale,
 }
 
 #[derive(Component)]
@@ -21,6 +21,12 @@ pub(crate) struct MarkersWindow;
 enum Scale {
     Time,
     Frames,    
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Scale::Frames
+    }
 }
 
 #[derive(Event)]
@@ -43,6 +49,7 @@ impl Graphs {
         Graphs {
             graphs: HashMap::new(),
             empty_graphs: HashMap::new(),
+            scale: Scale::Frames,
         }
     }
     fn add_graph(&mut self, marker: String, primary: Vec<f64>) {
@@ -58,10 +65,7 @@ impl Graphs {
         self.graphs.iter_mut().for_each(|(_, graph)| graph.restart_secondary_plot());
     }
     fn set_scale(&mut self, scale: Scale) {
-        self.graphs.iter_mut().for_each(|(_, graph)| graph.scale = match scale {
-            Scale::Time => Scale::Time,
-            Scale::Frames => Scale::Frames,
-        });
+        self.scale = scale;
     }
 }
 
@@ -70,7 +74,6 @@ impl Graph{
         Graph {
             primary_plot: primary,
             secondary_plot: Vec::new(),
-            scale: Scale::Frames,
         }
     }
     fn add_primary_plot(&mut self, value: Vec<f64>,){
@@ -317,7 +320,7 @@ pub(crate) fn represent_graphs(
                             .color(egui::Color32::from_rgb(255, 0, 0));
                         let secondary_line = Line::new(graph.get_secondary_plot())
                             .color(egui::Color32::from_rgb(0, 255, 0));
-                        let plot = match graph.scale {
+                        let plot = match graphs.scale {
                             Scale::Time => {
                                 let frame_rate = state.frame_rate;
                                 if let Some(frame_rate) = frame_rate{
