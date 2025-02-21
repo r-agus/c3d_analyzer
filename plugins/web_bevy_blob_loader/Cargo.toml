@@ -13,14 +13,14 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 repository = "https://github.com/kayhhh/bevy_web_file_drop"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = "0.15.1"
-bevy_blob_loader = "0.0.6"
+bevy = "0.15.2"
+bevy_blob_loader = { git = "https://github.com/r-agus/bevy_blob_loader", branch = "Update_to_bevy_15" }
 js-sys = "0.3.66"
 wasm-bindgen = "0.2.91"
 

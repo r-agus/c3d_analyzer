@@ -44,48 +44,73 @@ pub(crate) fn spawn_vectors_in_config(
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ){
     if config_file.get_config(current_config).is_some(){
-        if let Some(vectors) = config_file.get_config(current_config).unwrap().get_vectors(){
-            for (point, vector) in vectors {
-                let default_cylinder_height = 1.0;
-                let mut cone_mesh = Mesh::from(Cone {
-                    radius: 0.05,
-                    height: 0.2,
-                });
-                let mut cylinder_mesh = Mesh::from(Cylinder::new(
-                    0.01,
-                    default_cylinder_height,    
-                ));
+        if let Some(vectors_map) = config_file.get_config(current_config).unwrap().get_vectors(){
+            for (point, vectors) in vectors_map {
+                let num_vectors = vectors.len();
+                let mut i = 0;
+                for (vector, scale) in vectors {
+                    let default_cylinder_height = 1.0;
+                    let mut cone_mesh = Mesh::from(Cone {
+                        radius: if num_vectors == 3 {0.025} else {0.05}, // Adapt possitional vectors
+                        height: if num_vectors == 3 {0.5} else {0.2},
+                    });
+                    let mut cylinder_mesh = Mesh::from(Cylinder::new(
+                        0.01,
+                        default_cylinder_height,    
+                    ));
 
-                // Extract and modify positions
-                if let Some(positions) = cone_mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-                    let modified_positions: Vec<[f32; 3]> = positions
-                        .as_float3()
-                        .unwrap_or(&[[0.0, 0.0, 0.0]])
-                        .iter()
-                        .map(|&[x, y, z]| [x, y + default_cylinder_height/2.0, z]) // cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
-                        .collect();
+                    // Extract and modify positions
+                    if let Some(positions) = cone_mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+                        let modified_positions: Vec<[f32; 3]> = positions
+                            .as_float3()
+                            .unwrap_or(&[[0.0, 0.0, 0.0]])
+                            .iter()
+                            .map(|&[x, y, z]| [x, y + default_cylinder_height/2.0, z]) // cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
+                            .collect();
 
-                    // Replace the positions attribute
-                    cone_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, modified_positions);
-                }
+                        // Replace the positions attribute
+                        cone_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, modified_positions);
+                    }
                 
-                cylinder_mesh.merge(&cone_mesh);
-
-                commands.spawn((
-                    Mesh3d(meshes.add(cylinder_mesh)),
-                    MeshMaterial3d(materials.add(StandardMaterial {
-                    base_color: Color::srgb_u8(255, 220, 0),
-                        ..default()})),
-                    Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-                    Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.0.clone(), Visibility::Visible), vector.1.clone())));
-                commands.spawn((
-                    Mesh3d(meshes.add(cone_mesh)),
-                    MeshMaterial3d(materials.add(StandardMaterial {
-                        base_color: Color::srgb_u8(255, 220, 0),
-                        ..default()
-                    })),
-                    Transform::from_translation(Vec3::new(0.0, vector.1 as f32, 0.0)),
-                    Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.0.clone(), Visibility::Visible), vector.1.clone())));
+                    cylinder_mesh.merge(&cone_mesh);
+                
+                    commands.spawn((
+                        Mesh3d(meshes.add(cylinder_mesh)),
+                        MeshMaterial3d(materials.add(StandardMaterial {
+                        base_color: {
+                            if num_vectors == 3 && i == 0 {
+                                Color::srgb_u8(255, 0, 0)
+                            } else if num_vectors == 3 && i == 1 {
+                                Color::srgb_u8(0, 255, 0)
+                            } else if num_vectors == 3 && i == 2 {
+                                Color::srgb_u8(0, 0, 255)
+                            } else {
+                                Color::srgb_u8(255, 220, 0)
+                            }},
+                            ..default()})),
+                        Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+                        Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.clone(), Visibility::Visible), *scale)));
+                    commands.spawn((
+                        Mesh3d(meshes.add(cone_mesh)),
+                        MeshMaterial3d(materials.add(StandardMaterial {
+                            base_color: {
+                                if num_vectors == 3 && i == 0 {
+                                    i += 1;
+                                    Color::srgb_u8(255, 0, 0)
+                                } else if num_vectors == 3 && i == 1 {
+                                    i += 1;
+                                    Color::srgb_u8(0, 255, 0)
+                                } else if num_vectors == 3 && i == 2 {
+                                    i += 1;
+                                    Color::srgb_u8(0, 0, 255)
+                                } else {
+                                    Color::srgb_u8(255, 220, 0)
+                                }},
+                            ..default()
+                        })),
+                        Transform::from_translation(Vec3::new(0.0, *scale as f32, 0.0)),
+                        Vector(Marker(point.clone(), Visibility::Visible), Marker(vector.clone(), Visibility::Visible), *scale)));
+                }
             }
         }
     }

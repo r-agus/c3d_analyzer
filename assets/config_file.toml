@@ -18,6 +18,21 @@
 
     errores = ["LWRB", "Rfemur.*"]
 
+    demo_arms = ["RSJC", "RELJ"]
+    demo_forearms = ["RELJ", "RWJC"]
+
+    centro_masa = ["RUarmCM", "LUarmCM", "RFarmCM", "LFarmCM"]
+
+[demo_arms.config]
+    join_color = [190, 215, 20, 150]
+
+[demo_forearms.config]
+    join_color = [190, 215, 20, 150]
+
+[centro_masa.config]
+    point_color = [255, 255, 0]
+    point_size = 2.0
+
 [head.config]
     point_color = [255, 0, 0]
     point_size = 0.5 # Mitad del tamaño original
@@ -101,54 +116,92 @@
 
 [arms_with_cones] # Personalizar los brazos con conos
     visible_points = [
-        ["head"], 
-        ["luarm"], ["larm"], ["ruarm"], ["rarm"], ["lhand"], ["rhand"], ["shoulders"],  # Vamos a personalizar estos puntos
-        ["lleg"], ["rleg"], "OBJ[1-Z]", "BALL"     
+        ["head"],
+        
+        "RSJC", "RELJ", "RWJC", "RFINJC", # Brazo derecho
+        "LSJC", "LELJ", "LWJC", "LFINJC", # Brazo izquierdo
+
+        "C7", "CLAV", "STRN", "T10",      # Tronco
+        "RASI", "LASI", "LPSI", "RPSI",   # Pelvis
+
+        "RHJC", "RKJC", "RAJC",           # Pierna derecha
+        "LHJC", "LKJC", "LAJC",           # Pierna izquierda
+
+        "RHEE", "RTOE",                   # Pie derecho
+        "LHEE", "LTOE",                   # Pie izquierdo
+
+        "OBJA", "ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5" # Palo
         ]
 
     joins = [
         [["head"]],
-        { points = [["luarm"]], shape = { type = "semicono", radius1 = 1.8, radius2 = 1 }},
-        { points = [["ruarm"]], shape = { type = "semicone", radius1 = 1.8, radius2 = 1 }},    # Entiende tanto ingles como español
-        { points = [["larm"]], shape = { type = "partial cone", radius1 = 2.3, radius2 = 1.5}}, 
-        { points = [["rarm"]], shape = { type = "cono parcial", radius1 = 2.3, radius2 = 1.5}},   # Varias formas de decir lo mismo
-        { points = [["lhand"]], shape = { type = "cone frustum", radius1 = 2.5, radius2 = 1}}, 
-        { points = [["rhand"]], shape = { type = "CONO Truncado", radius1 = 2.5, radius2 = 1}}, # Las mayusculas no importan 
-        { points = [["shoulders"]], shape = { type = "cilindro", radius = 2 }},                 # Cada forma tiene sus propios parametros
-        { points = ["LUPA1", "LFRA"], shape = { type = "cone frustum", radius1 = 3.5, radius2 = 1.3}},
-        { points = ["RUPA1", "RFRA"], shape = { type = "cone frustum", radius1 = 3.5, radius2 = 1.3}},        
-        [["lleg"]],
-        [["rleg"]],
-        ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"],
+        { points = [["demo_arms"]], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Brazo derecho
+        { points = ["RELJ", "RWJC"], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Antebrazo derecho
+        { points = ["LSJC", "LELJ", "LWJC"], shape = { type = "semicono", radius1 = 4.0, radius2 = 2.0 } }, # Brazo izquierdo
+        { points = ["RWJC", "RFINJC"], shape = { type = "semicono", radius1 = 2.5, radius2 = 1.0 } },       # Antebrazo derecho
+        { points = ["LWJC", "LFINJC"], shape = { type = "semicono", radius1 = 2.5, radius2 = 1.0 } },       # Antebrazo izquierdo
+        ["C7", "CLAV", "STRN", "T10", "C7"],                                                                # Tronco
+        ["RASI", "LASI", "LPSI", "RPSI", "RASI"],                                                           # Pelvis
+        { points = ["RHJC", "RKJC", "RAJC"], shape = { type = "semicone", radius1 = 5.0, radius2 = 3.0 } }, # Pierna derecha
+        { points = ["LHJC", "LKJC", "LAJC"], shape = { type = "semicone", radius1 = 5.0, radius2 = 3.0 } }, # Pierna izquierda
+        ["RAJC", "RHEE", "RTOE"],                                                                           # Pie derecho
+        ["LAJC", "LHEE", "LTOE"],                                                                           # Pie izquierdo
+        ["OBJA", "ClubFace3"],                                                                              # Palo
+        ["ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5", "ClubFace3"]                                   # Palo
+    ]
+
+    vectors = [
+        ["RUarmCM", ["RUarmIv", "RUarmJv"], 2.5],
+        ["RUarmCM", "RUarmKv", 2.5],
     ]
 
     join_color = [0, 195, 250]
-    line_thickness = 0.5
+    line_thickness = 0.75
     point_size = 0.8
 
 [arms_with_rectangular_prism]
     visible_points = [
-        ["head"], 
-        ["luarm"], ["larm"], ["ruarm"], ["rarm"], ["lhand"], ["rhand"], ["shoulders"],
-        ["lleg"], ["rleg"], "OBJ[1-Z]", "BALL"  
+        ["head"],
+        
+        "RSJC", "RELJ", "RWJC", "RFINJC", # Brazo derecho
+        "LSJC", "LELJ", "LWJC", "LFINJC", # Brazo izquierdo
+
+        "C7", "CLAV", "STRN", "T10",      # Tronco
+        "RASI", "LASI", "LPSI", "RPSI",   # Pelvis
+
+        "RHJC", "RKJC", "RAJC",           # Pierna derecha
+        "LHJC", "LKJC", "LAJC",           # Pierna izquierda
+
+        "RHEE", "RTOE",                   # Pie derecho
+        "LHEE", "LTOE",                   # Pie izquierdo
+
+        "OBJA", "ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5" # Palo
         ]
 
     joins = [
         [["head"]],
-        { points = [["luarm"]], shape = { type = "prisma rectangular", width = 1.8, height = 1.5 }},
-        { points = [["ruarm"]], shape = { type = "rectangular prism",  width = 1.8, height = 1.5 }},
-        { points = [["larm"]], shape = { type = "prisma", width = 2.3, height = 1.5}}, 
-        { points = [["rarm"]], shape = { type = "prism",  width = 2.3, height = 1.5}},
-        { points = [["lhand"]], shape = { type = "paralelepipedo", width = 2.5, height = 1.9}}, 
-        { points = [["rhand"]], shape = { type = "paralelepípedo", width = 2.5, height = 1.9}},
-        { points = [["shoulders"]], shape = { type = "parallelepiped", width = 2, height = 1.7 }},
-        { points = ["LUPA1", "LFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},
-        { points = ["RUPA1", "RFRA"], shape = { type = "prism", width = 3.5, height = 3.3 }},        
-        [["lleg"]],
-        [["rleg"]],
-        ["OBJ1", "OBJ2", "OBJ3", "OBJ4", "OBJ5", "OBJ6", "OBJA"],
+        { points = ["RSJC", "RELJ"], shape = { type = "prism", width = 4.0, height = 2.0, vector = "RUarmCM" } }, # Brazo derecho
+        { points = ["RELJ", "RWJC"], shape = { type = "prism", width = 4.0, height = 2.0, vector = "RFarmCM" } }, # Brazo derecho vector = "RFarmCM"
+        { points = ["LSJC", "LELJ", "LWJC"], shape = { type = "prism", width = 4.0, height = 2.0 } }, # Brazo izquierdo
+        { points = ["RWJC", "RFINJC"], shape = { type = "prism", width = 2.5, height = 1.0 } },       # Antebrazo derecho 
+        { points = ["LWJC", "LFINJC"], shape = { type = "prism", width = 2.5, height = 1.0 } },       # Antebrazo izquierdo
+        ["C7", "CLAV", "STRN", "T10", "C7"],                                                                # Tronco
+        ["RASI", "LASI", "LPSI", "RPSI", "RASI"],                                                           # Pelvis
+        { points = ["RHJC", "RKJC", "RAJC"], shape = { type = "prism", width = 5.0, height = 3.0 } }, # Pierna derecha
+        { points = ["LHJC", "LKJC", "LAJC"], shape = { type = "prism", width = 5.0, height = 3.0 } }, # Pierna izquierda
+        ["RAJC", "RHEE", "RTOE"],                                                                           # Pie derecho
+        ["LAJC", "LHEE", "LTOE"],                                                                           # Pie izquierdo
+        ["OBJA", "ClubFace3"],                                                                              # Palo
+        ["ClubFace3", "ClubFace4", "ClubFace6", "ClubFace5", "ClubFace3"]                                   # Palo
     ]
 
-    join_color = [250, 0, 250]
+    vectors = [
+        ["RUarmCM", ["RUarmIv", "RUarmJv", "RUarmKv"], 2.5],
+        ["RFarmCM", ["RFarmIv", "RFarmJv", "RFarmKv"], 1.5],
+        ["LUarmCM", ["LUarmIv", "LUarmJv", "LUarmKv"], 2.5],
+        ["LFarmCM", ["LFarmIv", "LFarmJv", "LFarmKv"], 1.5],        
+    ]
+
+    join_color = [250, 0, 250, 190]
     line_thickness = 0.5
     point_size = 0.8

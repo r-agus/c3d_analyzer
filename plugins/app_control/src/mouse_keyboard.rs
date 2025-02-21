@@ -1,4 +1,15 @@
+use bevy::input::mouse::{MouseMotion, MouseWheel};
+
 use crate::*;
+
+#[derive(Component)]
+pub(crate) struct CustomOrbitCamera {
+    pub center: Vec3,
+    pub distance: f32,
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
 
 pub fn keyboard_controls (
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -103,6 +114,60 @@ pub fn keyboard_controls (
             _ => {}
         }
     }    
+}
+
+pub(crate) fn update_orbit_camera(
+    mut cameras: Query<(&mut Transform, &mut CustomOrbitCamera)>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut motion_evr: EventReader<MouseMotion>,
+    mut wheel_evr: EventReader<MouseWheel>,
+    mut egui_context: bevy_egui::EguiContexts,
+) {
+    if egui_context.ctx_mut().wants_pointer_input() {
+        return;
+    }
+
+    let (mut transform, mut orbit) = cameras.single_mut();
+
+    let mut delta_yaw = 0.0;
+    let mut delta_pitch = 0.0;
+    let mut delta_pan = Vec2::ZERO;
+
+    for ev in motion_evr.read() {
+        if mouse.pressed(MouseButton::Left) {
+            delta_yaw -= ev.delta.x * 0.005;
+            delta_pitch -= ev.delta.y * 0.005;
+        }
+        if mouse.pressed(MouseButton::Right) {
+            delta_pan += ev.delta;
+        }
+    }
+
+    for ev in wheel_evr.read(){
+        orbit.distance -= ev.y * 0.5;
+    }
+
+    orbit.yaw += delta_yaw;
+    orbit.pitch = (orbit.pitch + delta_pitch).clamp(-std::f32::consts::FRAC_PI_2, 0.0);
+
+    let base_rotation = Quat::from_xyzw(std::f32::consts::SQRT_2 / 2.0, 0.0, 0.0, std::f32::consts::SQRT_2 / 2.0).normalize();
+
+    let corrected_up = base_rotation * Vec3::Y; 
+    let yaw_rotation = Quat::from_axis_angle(corrected_up, orbit.yaw);
+    let pitch_rotation = Quat::from_axis_angle(Vec3::X, orbit.pitch);
+
+    let final_rotation = yaw_rotation * base_rotation * pitch_rotation;
+
+    if delta_pan != Vec2::ZERO {
+        let pan_speed = 0.0025;
+        let right = final_rotation * Vec3::X;
+        let up = final_rotation * Vec3::Y;
+        orbit.center += right * (-delta_pan.x * pan_speed) + up * (delta_pan.y * pan_speed);
+    }
+
+    let initial_offset = final_rotation * Vec3::new(0.0, 0.0, orbit.distance);
+    transform.translation = orbit.center + initial_offset;
+    transform.rotation = final_rotation;
 }
 
 fn get_config_index(c3d_asset: &ConfigC3dAsset, idx: usize) -> Option<String> {

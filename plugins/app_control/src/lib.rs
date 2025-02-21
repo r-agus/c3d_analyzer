@@ -5,12 +5,13 @@ pub mod markers;
 pub mod joins;
 pub mod traces;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
 use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
+use mouse_keyboard::*;
 use vectors::*;
 use markers::*;
 use joins::*;
@@ -29,7 +30,8 @@ impl Plugin for ControlPlugin {
                 )))
             .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
-            .add_systems(Startup, setup)
+            .add_systems(Startup, setup_environment)
+            .add_systems(Startup, init_resources)
             .add_systems(First, file_drop::update_c3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_c3d } ))
             .add_systems(First, file_drop::update_configc3d_path.run_if(|state: Res<AppState>| -> bool { state.reload_config } ))
             .add_systems(Update, (file_drop::file_drop, mouse_keyboard::keyboard_controls))
@@ -43,6 +45,7 @@ impl Plugin for ControlPlugin {
             .add_systems(Update, (represent_joins, represent_vectors))
             .add_systems(Update, (joins_event_orchestrator, traces_event_orchestrator, vector_event_orchestrator, despawn_all_markers_event))
             .add_systems(Update, (change_frame_rate, change_config))
+            .add_systems(Update, update_orbit_camera)
             .add_event::<MarkerEvent>()
             .add_event::<JoinEvent>()
             .add_event::<TraceEvent>()
@@ -146,7 +149,7 @@ impl AppState {
     }
 }
 
-fn setup(
+fn init_resources(
     mut state: ResMut<AppState>,
     mut gui: ResMut<GuiSidesEnabled>,
 ) {
@@ -164,6 +167,105 @@ fn setup(
     gui.graphs = true;
 
     println!("Control PluginSetup done");
+}
+
+fn setup_environment(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    // Base
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Z, [5.0, 5.0].into()))),
+        MeshMaterial3d(materials.add(Color::srgb(0.2, 0.3, 0.2))),
+        Transform::from_rotation(Quat::from_rotation_x(0.0)),
+    ));
+
+    commands.spawn((
+        PointLight { ..default() },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
+    ));
+
+    commands.insert_resource(AmbientLight {
+        brightness: 0.3,
+        ..default()
+    });
+
+    // Set camera
+    commands.spawn((
+        Camera3d { ..default() },
+        Camera {
+            clear_color: Color::srgb(0.22, 0.22, 0.22).into(),
+            ..default()
+        },
+        CustomOrbitCamera {
+            center: Vec3::new(0.0, -0.1, 0.0),
+            distance: 7.0,
+            yaw: 0.0,
+            pitch: -0.5,
+        }
+    ));
+
+    spawn_reference_vectors(&mut commands, &mut materials, &mut meshes);
+}
+
+fn spawn_reference_vectors(
+    commands: &mut Commands, 
+    materials: &mut ResMut<Assets<StandardMaterial>>, 
+    meshes: &mut ResMut<Assets<Mesh>>
+) {
+    // Vectors for reference
+    let default_cylinder_height = 0.25;
+    let mut cone_mesh = Mesh::from(Cone {
+        radius: 0.025,
+        height: 0.1,
+    });
+    let mut vector_mesh = Mesh::from(Cylinder::new(
+        0.01,
+        default_cylinder_height,
+    ));
+
+    // Extract and modify positions
+    if let Some(positions) = cone_mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+        let modified_positions: Vec<[f32; 3]> = positions
+            .as_float3()
+            .unwrap_or(&[[0.0, 0.0, 0.0]])
+            .iter()
+            .map(|&[x, y, z]| [x, y + default_cylinder_height/2.0, z]) // cylinder height / 2, to place the cone on top of the cylinder (0 is the center of the cylinder)
+            .collect();
+        // Replace the positions attribute
+        cone_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, modified_positions);
+    }
+
+    vector_mesh.merge(&cone_mesh);
+    
+    let colors = vec![
+        Color::srgb_u8(255, 0, 0),
+        Color::srgb_u8(0, 255, 0),
+        Color::srgb_u8(0, 0, 255),
+    ];
+    let point = Vec3::new(-2.0, -2.0, 0.0);
+    let positions = vec![
+        point + Vec3::new(default_cylinder_height / 2.0, 0.0, 0.0),
+        point + Vec3::new(0.0, default_cylinder_height / 2.0, 0.0),
+        point + Vec3::new(0.0, 0.0, default_cylinder_height / 2.0),
+    ];
+    let rotations = vec![
+        Quat::from_axis_angle(Vec3::Z, -std::f32::consts::FRAC_PI_2),
+        Quat::IDENTITY,
+        Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2),
+    ];
+    colors.iter().zip(rotations).zip(positions).all(|((color, rotation), position)| {
+        commands.spawn((
+            Mesh3d(meshes.add(vector_mesh.clone())),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: color.clone(),
+                ..default()
+            })),
+            Transform::from_translation(position).with_rotation(rotation),
+        ));
+        true
+    });
 }
 
 fn load_c3d(

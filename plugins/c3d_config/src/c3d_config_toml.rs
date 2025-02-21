@@ -10,7 +10,7 @@ use toml::{Value, map::Map};
 pub struct Config {
     visible_points: Option<Vec<String>>, // Contains a regex for each point that should be visible
     joins: Option<Vec<(Vec<String>, JoinShape)>>, // Contains a list of joins between points and the shape of the join
-    vectors: Option<HashMap<String, (String, f64)>>, // Map where the key is the point and the value is the vector name and the scale
+    vectors: Option<HashMap<String, Vec<(String, f64)>>>, // Map where the key is the point and the value are the vectors fixed to that point, with their name and the scale
     point_color: Option<Vec<u8>>,
     join_color: Option<Vec<u8>>,
     line_thickness: Option<f64>,
@@ -22,7 +22,7 @@ pub enum JoinShape {
     Line,
     Cylinder(f64),      // Radius
     SemiCone(f64, f64), // Radius of one end, radius of the other end
-    RectangularPrism(f64, f64, Option<HashMap<String, (String, bool)>>), // Width, height, mapa con vectores de orientación: la clave es el punto, el valor es el nombre del vector y un booleano que indica si es visible
+    RectangularPrism(f64, f64, Option<[String;3]>), // Width, height, vectores de orientación unitarios (Iv, Jv, Kv)
 }
 
 impl Config {
@@ -43,8 +43,11 @@ impl Config {
     pub fn get_joins(&self) -> Option<&Vec<(Vec<String>, JoinShape)>> {
         self.joins.as_ref()
     }
-    pub fn get_vectors(&self) -> Option<&HashMap<String, (String, f64)>> {
+    pub fn get_vectors(&self) -> Option<&HashMap<String, Vec<(String, f64)>>> {
         self.vectors.as_ref()
+    }
+    pub fn get_vectors_for_point(&self, point: &str) -> Option<&Vec<(String, f64)> > {
+        self.vectors.as_ref().and_then(|v| v.get(point))
     }
     pub fn add_visible_point(&mut self, point: String) {
         if let Some(visible_points) = &mut self.visible_points {
@@ -415,6 +418,74 @@ fn parse_individual_config(
         }
     }
 
+    if let Some(Value::Array(vectors)) = table.get("vectors") {
+        let mut vector_map: HashMap<String, Vec<(String, f64)>> = HashMap::new();
+        for vector in vectors {
+            let mut vectors_in_map = Vec::new();
+            if let Value::Array(vector_pair) = vector {
+                if vector_pair.len() == 2 {
+                    if let Some(Value::String(point)) = vector_pair.get(0) {
+                        match vector_pair.get(1) {
+                            Some(Value::String(vector_name)) => {
+                                if vector_map.contains_key(point) {
+                                    vectors_in_map = vector_map.get(point).unwrap().clone();  // If the point already has vectors, we need to keep them
+                                }
+                                vectors_in_map.push((vector_name.clone(), 1.0));
+                                vector_map.insert(point.clone(), vectors_in_map);
+                            },
+                            Some(Value::Float(_)) | Some(Value::Integer(_)) => println!("Scale not permitted without point and vector: {:?}", vector_pair),
+                            Some(Value::Array(values)) => {
+                                vectors_in_map = vector_map.get(point).unwrap_or(&Vec::new()).to_vec();
+                                for vector in values {
+                                    match vector {
+                                        Value::String(vector) => vectors_in_map.push((vector.clone(), 1.0)),
+                                        _ => println!("Value not recognized at {vector}")
+                                    }
+                                }
+                                vector_map.insert(point.to_string(), vectors_in_map);
+                            },
+                            _ => (),
+                        }
+                    } else {
+                        println!("Invalid vector pair: {:?}", vector_pair)
+                    }
+                } else if vector_pair.len() == 3 {
+                    if let Some(Value::String(point)) = vector_pair.get(0) {
+                        match vector_pair.get(1) {
+                            Some(Value::String(vector_name)) => {
+                                if let Some(Value::Float(scale)) = vector_pair.get(2) {
+                                    if vector_map.contains_key(point) {
+                                        vectors_in_map = vector_map.get(point).unwrap().clone();  // If the point already has vectors, we need to keep them
+                                    }
+                                    vectors_in_map.push((vector_name.clone(), *scale));
+                                    vector_map.insert(point.clone(), vectors_in_map);
+                                }
+                            },
+                            Some(Value::Float(_)) | Some(Value::Integer(_)) => println!("Scale not permitted without point and vector. Maybe incorrect order. Set Point, Vector, Scale: {:?}", vector_pair),
+                            Some(Value::Array(values)) => {
+                                vectors_in_map = vector_map.get(point).unwrap_or(&Vec::new()).to_vec();
+                                let scale = vector_pair.get(2).and_then(|x| x.as_float()).unwrap_or(1.0);
+                                for vector in values {
+                                    match vector {
+                                        Value::String(vector) => vectors_in_map.push((vector.clone(), scale)),
+                                        _ => println!("Value not recognized at {vector}")
+                                    }
+                                }
+                                vector_map.insert(point.to_string(), vectors_in_map);  
+                            },
+                            _ => (),
+                        }
+                    }
+                } else {
+                    println!("Invalid vector pair: {:?}", vector_pair);
+                }
+            } else {
+                println!("Invalid vector: {:?}", vector);
+            }
+        }
+        config.vectors = Some(vector_map);
+    }
+
     if let Some(Value::Array(joins)) = table.get("joins") {
         for join in joins {
             match join {
@@ -510,12 +581,18 @@ fn parse_individual_config(
                                         if let Some(Value::Array(points)) = join_table.get("points") {
                                             let width = shapes_table.get("width").and_then(Value::as_float).or_else(|| shapes_table.get("width").and_then(Value::as_integer).map(|v| v as f64));
                                             let height = shapes_table.get("height").and_then(Value::as_float).or_else(|| shapes_table.get("height").and_then(Value::as_integer).map(|v| v as f64));
-                                            let points_len = points.len();
-                                            let orientation_vectors = shapes_table.get("vectors").and_then(|v| {
-                                                v.as_array().map(|arr| {
-                                                    arr.iter().filter_map(|val| val.as_str().map(|s| s.to_string())).collect::<Vec<String>>()
-                                                })
-                                            });
+                                            
+                                            let orientation_point = shapes_table.get("vector").and_then(|v| v.as_str());
+                                            let orientation_vectors = orientation_point
+                                                .and_then(|orientation_vectors| {
+                                                    config.get_vectors_for_point(orientation_vectors)
+                                                        .filter(|vectors| vectors.len() == 3)
+                                                        .map(|vectors| [
+                                                            vectors[0].0.clone(),
+                                                            vectors[1].0.clone(),
+                                                            vectors[2].0.clone(),
+                                                        ])
+                                                });
                                             
                                             if width.is_none() || height.is_none() {
                                                 println!("Rectangular prism join without proper width or height: {:?}", shapes_table);
@@ -526,36 +603,17 @@ fn parse_individual_config(
                                             let width = width.unwrap();
                                             let height = height.unwrap();
 
-                                            match orientation_vectors {
-                                                Some(vectors) if vectors.len() == points_len - 1 => {
-                                                    let orientation_vectors_visibility = shapes_table.get("vectors_visibility").and_then(Value::as_array).map(|v| v.iter().map(|v| v.as_bool().unwrap_or(true)).collect::<Vec<bool>>()); 
-                                                    match orientation_vectors_visibility {
-                                                        Some(visibilities) if visibilities.len() == points_len - 1 => {
-                                                            let tuple: Vec<(String, bool)> = vectors.iter().zip(visibilities.iter()).map(|(v, b)| (v.clone(), *b)).collect();
-                                                            let mut map = HashMap::new();
-                                                            for i in 0..points_len - 1 {
-                                                                map.insert(points[i].as_str().unwrap().to_string(), tuple[i].clone());
-                                                            }
-                                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, Some(map)));
-                                                        },
-                                                        _ => {
-                                                            println!("Rectangular prism join without proper vectors visibility: {:?}", shapes_table);
-                                                            let tuple: Vec<(String, bool)> = vectors.iter().map(|v| (v.clone(), true)).collect();
-                                                            let mut map = HashMap::new();
-                                                            for i in 0..points_len - 1 {
-                                                                map.insert(points[i].as_str().unwrap().to_string(), tuple[i].clone());
-                                                            }
-                                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, Some(map)));
-                                                        },
-                                                    }   
+                                            match orientation_point {
+                                                Some(orientation_point) => {
+                                                    match orientation_vectors {
+                                                        Some(vectors) => generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, Some(vectors))),
+                                                        None => {
+                                                            println!("Orientation point {:?} not found in vectors", orientation_point);
+                                                            generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None));
+                                                        }
+                                                    }
                                                 },
-                                                Some(vectors) => {
-                                                    println!("Rectangular prism join without proper vectors: {:?}", vectors);
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None));
-                                                },
-                                                None => {
-                                                    generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None));
-                                                }
+                                                None => generate_expanded_points(point_groups, &mut config, points, JoinShape::RectangularPrism(width, height, None)),
                                             }
                                         }
                                     },
@@ -580,30 +638,6 @@ fn parse_individual_config(
                 _ => (),
             }
         }
-    }
-
-    if let Some(Value::Array(vectors)) = table.get("vectors") {
-        let mut vector_map = HashMap::new();
-        for vector in vectors {
-            if let Value::Array(vector_pair) = vector {
-                if vector_pair.len() == 2 {
-                    if let Value::String(point) = vector_pair.get(0).unwrap() {
-                        if let Value::String(vector_name) = vector_pair.get(1).unwrap() {
-                            vector_map.insert(point.clone(), (vector_name.clone(), 1.0));
-                        }
-                    }
-                } else if vector_pair.len() == 3 {
-                    if let Value::String(point) = vector_pair.get(0).unwrap() {
-                        if let Value::String(vector_name) = vector_pair.get(1).unwrap() {
-                            if let Value::Float(scale) = vector_pair.get(2).unwrap() {
-                                vector_map.insert(point.clone(), (vector_name.clone(), scale.clone()));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        config.vectors = Some(vector_map);
     }
 
     config.point_color = table.get("point_color").and_then(|v| v.as_array()).and_then(|v| {
@@ -678,9 +712,9 @@ fn parse_point_group_config(table: Map<String, Value>) -> Result<PointGroupConfi
     group_config.point_size = table.get("point_size").and_then(|v| v.as_float());
     group_config.join_color = table.get("join_color").and_then(|v| v.as_array()).and_then(|v| {
         if v.len() == 3 {
-            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8])
+            Some(vec![v[0].as_integer().unwrap_or(27) as u8, v[1].as_integer().unwrap_or(210) as u8, v[2].as_integer().unwrap_or(27) as u8])
         } else if v.len() == 4 {
-            Some(vec![v[0].as_integer().unwrap() as u8, v[1].as_integer().unwrap() as u8, v[2].as_integer().unwrap() as u8, v[3].as_integer().unwrap() as u8])
+            Some(vec![v[0].as_integer().unwrap_or(27) as u8, v[1].as_integer().unwrap_or(210) as u8, v[2].as_integer().unwrap_or(27) as u8, v[3].as_integer().unwrap_or(50) as u8])
         } else {
             None
         }

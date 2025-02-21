@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.15.1"
 bevy_c3d_mod = {path = "../bevy_c3d_mod"}
-bevy_mod_picking = "0.20.1"
+# bevy_mod_picking = "0.20.1"
 bevy_web_file_drop = { path = "../web_bevy_blob_loader" }
+bevy_egui = "0.31.1"
 config_plugin = { path = "../c3d_config" }
