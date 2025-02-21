@@ -1,5 +1,6 @@
 mod milestones;
 mod metrics_dashboard;
+mod theme;
 
 use bevy::prelude::*;
 
@@ -13,6 +14,7 @@ use control_plugin::*;
 use egui_double_slider::DoubleSlider;
 use milestones::{milestones_event_orchestrator, update_milestone_board, Milestones};
 use metrics_dashboard::*;
+use theme::Theme;
 use vectors::*;
 use markers::*;
 use traces::*;
@@ -22,17 +24,15 @@ pub struct GUIPlugin;
 impl Plugin for GUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-            // .add_plugins(RegistryPlugin::default())
-            // .add_plugins(DashboardPlugin)
             .add_systems(Startup, setup)
             .add_systems(Update,
                     (gui, 
                         fill_graphs, represent_graphs
-                    // DashboardWindow::draw_all.run_if(|state: Res<GuiSidesEnabled>| -> bool { state.graphs } )
                     ).chain())
-            .add_systems(Update, (milestones_event_orchestrator, graph_event_orchestrator, fill_empty_graphs, MarkersWindow::draw_floating_window))
+            .add_systems(Update, (milestones_event_orchestrator, graph_event_orchestrator, fill_empty_graphs, MarkersWindow::draw_floating_window, theme::set_theme))
             .init_resource::<Graphs>()
             .init_resource::<Milestones>()
+            .init_resource::<Theme>()
             .add_event::<GraphEvent>();
     }
 }
