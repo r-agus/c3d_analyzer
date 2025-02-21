@@ -9,7 +9,7 @@ use std::{collections::HashMap, vec};
 
 use bevy::{asset::AssetMetaCheck, prelude::*}; 
 use bevy_c3d_mod::*;
-// use bevy_web_file_drop::WebFileDropPlugin;
+use bevy_web_file_drop::WebFileDropPlugin;
 use config_plugin::{parse_config, C3dConfigPlugin, ConfigC3dAsset, ConfigFile, ConfigState};
 use mouse_keyboard::*;
 use vectors::*;
@@ -22,12 +22,12 @@ pub struct ControlPlugin;
 impl Plugin for ControlPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins(DefaultPlugins.set(  // WebFileDropPlugin,
+            .add_plugins((WebFileDropPlugin, DefaultPlugins.set(
                 AssetPlugin {
                             meta_check: AssetMetaCheck::Never,
                             ..default()
                         }
-                ))
+                )))
             .add_plugins(C3dPlugin)
             .add_plugins(C3dConfigPlugin)
             .add_systems(Startup, setup_environment)
