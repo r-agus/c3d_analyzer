@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
 use crate::*;
-use egui_plot::{Line, Plot};
+use egui_plot::{AxisHints, Line, Plot};
 
 #[derive(Resource, Default)]
 pub(crate) struct Graphs{
     graphs: HashMap<String, Graph>,
     empty_graphs: HashMap<String, XYZ>,
+    scale: Scale,
 } 
 
 struct Graph {
     primary_plot: Vec<f64>,
     secondary_plot: Vec<f64>, 
-    scale: Scale,
 }
 
 #[derive(Component)]
@@ -21,6 +21,12 @@ pub(crate) struct MarkersWindow;
 enum Scale {
     Time,
     Frames,    
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Scale::Frames
+    }
 }
 
 #[derive(Event)]
@@ -43,6 +49,7 @@ impl Graphs {
         Graphs {
             graphs: HashMap::new(),
             empty_graphs: HashMap::new(),
+            scale: Scale::Frames,
         }
     }
     fn add_graph(&mut self, marker: String, primary: Vec<f64>) {
@@ -57,17 +64,8 @@ impl Graphs {
     fn restart_graphs(&mut self) {
         self.graphs.iter_mut().for_each(|(_, graph)| graph.restart_secondary_plot());
     }
-    fn set_time_scale(&mut self) {
-        self.graphs.iter_mut().for_each(|(_, graph)| graph.scale = Scale::Time);
-    }
-    fn set_frame_scale(&mut self) {
-        self.graphs.iter_mut().for_each(|(_, graph)| graph.scale = Scale::Frames);
-    }
     fn set_scale(&mut self, scale: Scale) {
-        self.graphs.iter_mut().for_each(|(_, graph)| graph.scale = match scale {
-            Scale::Time => Scale::Time,
-            Scale::Frames => Scale::Frames,
-        });
+        self.scale = scale;
     }
 }
 
@@ -76,7 +74,6 @@ impl Graph{
         Graph {
             primary_plot: primary,
             secondary_plot: Vec::new(),
-            scale: Scale::Frames,
         }
     }
     fn add_primary_plot(&mut self, value: Vec<f64>,){
@@ -223,7 +220,6 @@ pub(crate) fn graph_event_orchestrator(
     mut event_reader: EventReader<GraphEvent>,
     mut graphs: ResMut<Graphs>,
     mut commands: Commands,
-    mut ctx: EguiContexts,
     c3d_state: Res<bevy_c3d_mod::C3dState>,
     c3d_assets: Res<Assets<bevy_c3d_mod::C3dAsset>>,
     query_markers: Query<(&Marker, &Transform)>,
@@ -243,7 +239,6 @@ pub(crate) fn graph_event_orchestrator(
                 graphs.restart_graphs();
             }
             GraphEvent::CreateMarkersWindow => {
-                let ctx = ctx.ctx_mut();
                 if query_windows.iter().count() == 0 {
                     commands.spawn(MarkersWindow::new());
                 }
@@ -275,7 +270,7 @@ pub(crate) fn represent_graphs(
     mut graphs: ResMut<Graphs>,
     mut ctx: EguiContexts,
     mut commands: Commands,
-    query_markers: Query<&Marker>
+    state: Res<AppState>,
 ){
     let ctx  = ctx.ctx_mut();
     let mut removed_graphs = Vec::new();
@@ -287,14 +282,32 @@ pub(crate) fn represent_graphs(
                 commands.spawn(MarkersWindow::new());
             }
             ui.separator();
+            ui.collapsing("Settings", |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Scale:");
+                    if ui.button("Time").clicked() {
+                        graphs.set_scale(Scale::Time);
+                    }
+                    if ui.button("Frames").clicked() {
+                        graphs.set_scale(Scale::Frames);
+                    }
+                });
+            });
+            ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let mut keys = graphs.graphs.keys().cloned().collect::<Vec<String>>();
                 keys.sort();
                 for (_i, marker) in keys.iter().enumerate() {
                     ui.collapsing(marker, |ui|{
-                        if ui.button("Remove").clicked() {
-                            removed_graphs.push(marker.clone());
-                        }
+                        ui.horizontal(|ui| {
+                            let current_y = graphs.graphs.get(marker).unwrap().secondary_plot.last().unwrap_or(&0.0);
+                            
+                            if ui.button("Remove").clicked() {
+                                removed_graphs.push(marker.clone());
+                            }
+                            ui.add_space(ui.available_width() / 2.0);
+                            ui.label(format!("Current Y: {:.2}", current_y));
+                        });
                         let new_plot = || {
                             Plot::new(marker)
                                 .allow_scroll(false)
@@ -307,9 +320,26 @@ pub(crate) fn represent_graphs(
                             .color(egui::Color32::from_rgb(255, 0, 0));
                         let secondary_line = Line::new(graph.get_secondary_plot())
                             .color(egui::Color32::from_rgb(0, 255, 0));
-                        let plot = match graph.scale {
-                            Scale::Time => new_plot().x_axis_label("Time"),
-                            Scale::Frames => new_plot().x_axis_label("Frames"),
+                        let plot = match graphs.scale {
+                            Scale::Time => {
+                                let frame_rate = state.frame_rate;
+                                if let Some(frame_rate) = frame_rate{
+                                    let axis_hints = {
+                                        let frame_rate = frame_rate.clone();
+                                        AxisHints::new_x().formatter(move |x, _range| {
+                                            let time = x.value / frame_rate as f64;
+                                            format!("{:.2}", time)
+                                        })
+                                    };
+                                    new_plot().x_axis_label("Time").custom_x_axes(vec![axis_hints])
+                                } else {
+                                    new_plot().x_axis_label("Time")
+                                }
+                            },
+                            Scale::Frames => {
+                                let axis_hints = AxisHints::new_x();
+                                new_plot().x_axis_label("Frames").custom_x_axes(vec![axis_hints])
+                            },
                         };
                         plot.show(ui, |ui| {
                             ui.line(principal_line);
