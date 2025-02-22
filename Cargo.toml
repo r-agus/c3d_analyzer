@@ -1,6 +1,6 @@
 [package]
 name = "proyecto_swing"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Rubén Agustín <r.agussglz@gmail.com>"]
 edition = "2021"
 
