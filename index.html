@@ -13,8 +13,6 @@
       const validHash = "3a2d7b456333645f616e616c797a65723a7466675f74656c656d6174696361c4f8e0d3";
       
       function checkCredentials(u, p) {
-        console.log(u, p);
-        console.log(generateHash(u, p));
         return validHash === generateHash(u, p);
       }
       
