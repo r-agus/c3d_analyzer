@@ -8,6 +8,96 @@
   <title>Swing3D</title>
   <link rel="stylesheet" href="styles.css">
 
+  <script>
+    window.onload = function() {
+      const validHash = "3a2d7b456333645f616e616c797a65723a7466675f74656c656d6174696361c4f8e0d3";
+      
+      function checkCredentials(u, p) {
+        console.log(u, p);
+        console.log(generateHash(u, p));
+        return validHash === generateHash(u, p);
+      }
+      
+      function generateHash(user, pass) {
+        let str = user.toLowerCase() + ":" + pass;
+        return Array.from(str).reduce((a, c) => 
+          (a + c.charCodeAt(0).toString(16)), "3a2d7b45") + "c4f8e0d3";
+      }
+      
+      // Create login overlay
+      const loginOverlay = document.createElement('div');
+      loginOverlay.style.position = 'fixed';
+      loginOverlay.style.top = '0';
+      loginOverlay.style.left = '0';
+      loginOverlay.style.width = '100%';
+      loginOverlay.style.height = '100%';
+      loginOverlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
+      loginOverlay.style.zIndex = '1000';
+      loginOverlay.style.display = 'flex';
+      loginOverlay.style.alignItems = 'center';
+      loginOverlay.style.justifyContent = 'center';
+      
+      loginOverlay.innerHTML = `
+        <div style="background-color: #fff; padding: 30px; border-radius: 8px; width: 300px;">
+          <h2 style="text-align: center; margin-top: 0;">Authentication Required</h2>
+          <div id="errorMessage" style="color: red; text-align: center; margin-bottom: 15px; display: none;"></div>
+          <div id="attemptsDisplay" style="text-align: center; margin-bottom: 15px;">Attempt <span id="attemptCount">1</span> of 3</div>
+          <div style="margin-bottom: 15px;">
+            <label for="username">Username:</label>
+            <input type="text" id="username" style="width: 100%; padding: 8px; box-sizing: border-box;">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label for="password">Password:</label>
+            <input type="password" id="password" style="width: 100%; padding: 8px; box-sizing: border-box;">
+          </div>
+          <button id="loginButton" style="width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Login</button>
+        </div>
+      `;
+      
+      document.body.appendChild(loginOverlay);
+      
+      // Hide all other content
+      Array.from(document.body.children).forEach(child => {
+        if (child !== loginOverlay) {
+          child.style.display = 'none';
+        }
+      });
+      
+      let attempts = 1;
+      
+      document.getElementById('loginButton').addEventListener('click', function() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (!username || !password) {
+          document.getElementById('errorMessage').textContent = "Please enter both username and password.";
+          document.getElementById('errorMessage').style.display = 'block';
+          return;
+        }
+        
+        const authenticated = checkCredentials(username, password);
+        
+        if (authenticated) {
+          // Remove login overlay and show original content
+          loginOverlay.remove();
+          Array.from(document.body.children).forEach(child => {
+            child.style.display = '';
+          });
+        } else {
+          document.getElementById('errorMessage').textContent = "Invalid credentials. Please try again.";
+          document.getElementById('errorMessage').style.display = 'block';
+          
+          attempts++;
+          
+          if (attempts > 3) {
+            document.body.innerHTML = "<h1 style='text-align: center; margin-top: 100px;'>Too many failed attempts.</h1>";
+          } else {
+            document.getElementById('attemptCount').textContent = attempts;
+          }
+        }
+      });
+    };
+  </script>
   <body style="margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh;">
     <div class="title">
       <p style="font-family: 'Poppins', sans-serif; font-size: 75px; font-weight: 900; color: white;">
